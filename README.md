@@ -1,7 +1,3 @@
-Claro, aquí tienes la documentación completa para el archivo `README.md` de tu proyecto, incluyendo cómo iniciarlo y cómo gestionarlo.
-
------
-
 # Página de Turismo Neuquén
 
 Este proyecto es una página web de turismo interactiva y atractiva, diseñada para mostrar la belleza y las atracciones de Buta Ranquil y Chos Malal en Neuquén, Argentina. El sitio web ofrece a los usuarios información detallada sobre atracciones, actividades, alojamiento y experiencias de otros viajeros, todo presentado en una interfaz moderna y fácil de usar.

@@ -52,7 +52,7 @@ const DetailPage: React.FC = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {data.gallery.images.map((img, i) => (
                   <div key={i} className="overflow-hidden rounded-lg shadow-md">
-                    <img src={img} alt={`Gallery ${i}`} className="w-full h-48 object-cover" />
+                    <img src={img} alt={`Gallery ${i}`} loading="lazy" className="w-full h-48 object-cover bg-gray-100" />
                   </div>
                 ))}
               </div>

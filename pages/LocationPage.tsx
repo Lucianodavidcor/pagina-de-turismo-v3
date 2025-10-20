@@ -30,7 +30,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ data }) => {
                 <h3 className="text-2xl font-bold mb-4">{selected.title}</h3>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className="md:col-span-2">
-                    <img src={selected.image} alt={selected.title} className="w-full h-64 object-cover rounded mb-4" />
+                    <img src={selected.image} alt={selected.title} loading="lazy" className="w-full h-64 object-cover rounded mb-4 bg-gray-100" />
                     <p className="text-gray-700">{selected.description}</p>
                   </div>
                   <div className="p-4">
@@ -58,7 +58,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ data }) => {
             <div className="grid md:grid-cols-3 gap-6">
               {data.hotels.items.map((h, i) => (
                 <div key={i} className="bg-white rounded-lg shadow p-4">
-                  <img src={h.image} alt={h.title} className="w-full h-40 object-cover rounded mb-3" />
+                  <img src={h.image} alt={h.title} loading="lazy" className="w-full h-40 object-cover rounded mb-3 bg-gray-100" />
                   <h3 className="font-semibold text-lg">{h.title}</h3>
                   <p className="text-sm text-gray-600 mb-3">{h.description}</p>
                   <div className="text-sm text-gray-700 mb-3">
@@ -66,7 +66,8 @@ const LocationPage: React.FC<LocationPageProps> = ({ data }) => {
                     <div><strong>Email:</strong> {h.email ?? 'No disponible'}</div>
                   </div>
                   <div className="flex gap-2">
-                    <a href={`https://www.google.com/maps/search/?api=1&query=${h.coordinates.lat},${h.coordinates.lng}`} target="_blank" rel="noreferrer" className="px-3 py-2 bg-blue-500 text-white rounded">Ubicación</a>
+                    <button onClick={() => { if (mapRef.current) { mapRef.current.flyTo?.(h.coordinates.lat, h.coordinates.lng, 13); mapRef.current.openPopupAt?.(h.coordinates.lat, h.coordinates.lng); } }} className="px-3 py-2 bg-blue-500 text-white rounded">Ver en mapa</button>
+                    <a href={`https://www.google.com/maps/search/?api=1&query=${h.coordinates.lat},${h.coordinates.lng}`} target="_blank" rel="noreferrer" className="px-3 py-2 bg-gray-100 rounded">Abrir Google Maps</a>
                     {h.phone && <a href={`tel:${h.phone}`} className="px-3 py-2 bg-gray-100 rounded">Llamar</a>}
                   </div>
                 </div>
@@ -84,7 +85,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ data }) => {
             <div className="grid md:grid-cols-3 gap-6">
               {data.restaurants.items.map((r, i) => (
                 <div key={i} className="bg-white rounded-lg shadow p-4">
-                  <img src={r.image} alt={r.title} className="w-full h-40 object-cover rounded mb-3" />
+                  <img src={r.image} alt={r.title} loading="lazy" className="w-full h-40 object-cover rounded mb-3 bg-gray-100" />
                   <h3 className="font-semibold text-lg">{r.title}</h3>
                   <p className="text-sm text-gray-600 mb-3">{r.description}</p>
                   <div className="text-sm text-gray-700 mb-3">
@@ -92,7 +93,8 @@ const LocationPage: React.FC<LocationPageProps> = ({ data }) => {
                     <div><strong>Email:</strong> {r.email ?? 'No disponible'}</div>
                   </div>
                   <div className="flex gap-2">
-                    <a href={`https://www.google.com/maps/search/?api=1&query=${r.coordinates.lat},${r.coordinates.lng}`} target="_blank" rel="noreferrer" className="px-3 py-2 bg-blue-500 text-white rounded">Ubicación</a>
+                    <button onClick={() => { if (mapRef.current) { mapRef.current.flyTo?.(r.coordinates.lat, r.coordinates.lng, 13); mapRef.current.openPopupAt?.(r.coordinates.lat, r.coordinates.lng); } }} className="px-3 py-2 bg-blue-500 text-white rounded">Ver en mapa</button>
+                    <a href={`https://www.google.com/maps/search/?api=1&query=${r.coordinates.lat},${r.coordinates.lng}`} target="_blank" rel="noreferrer" className="px-3 py-2 bg-gray-100 rounded">Abrir Google Maps</a>
                     {r.phone && <a href={`tel:${r.phone}`} className="px-3 py-2 bg-gray-100 rounded">Llamar</a>}
                   </div>
                 </div>
@@ -119,9 +121,9 @@ const LocationPage: React.FC<LocationPageProps> = ({ data }) => {
           <div className="container mx-auto px-6">
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">{gallery.title}</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {gallery.images.map((image, index) => (
+                {gallery.images.map((image, index) => (
                 <div key={index} className="overflow-hidden rounded-lg shadow-md aspect-w-1 aspect-h-1">
-                  <img src={image} alt={`${name} Gallery Image ${index + 1}`} className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300" />
+                  <img src={image} alt={`${name} Gallery Image ${index + 1}`} loading="lazy" className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300 bg-gray-100" />
                 </div>
               ))}
             </div>

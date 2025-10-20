@@ -78,7 +78,7 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
   hero: {
     title: 'Buta Ranquil: Aventura y Tradición', // Título principal.
     subtitle: 'Descubrí un tesoro escondido en el norte neuquino.', // Subtítulo.
-    image: 'https://picsum.photos/seed/buta-ranquil-hero/1920/1080', // URL de la imagen de fondo.
+    image: 'https://municipiosycomunas.com.ar/wp-content/uploads/2018/11/BUTA-RANQUIL.jpg', // URL de la imagen de fondo.
   },
 
   // --- Enlaces de Navegación Específicos de la Página ---
@@ -94,28 +94,68 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
     title: 'Lugares que no te podés perder',
     items: [
       {
-        title: 'Volcán Tromen',
+        title: 'Area Natural Protegida El Tromen',
         description: 'Un gigante dormido que domina el paisaje. Ideal para trekking y fotografía.',
-        image: 'https://picsum.photos/seed/tromen/800/600',
+        images: [
+          'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/11/ed/37/56/volcan-y-escorial.jpg?w=1000&h=-1&s=1', 
+          'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/0f/2c/0d/f2/el-escorial.jpg?w=1000&h=-1&s=1',
+          'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/11/ed/37/19/escorial.jpg?w=1000&h=-1&s=1'],
+
           coordinates: { lat: -37.13, lng: -70.03 }, // Coordenadas para el mapa.
           phone: '+54 9 299 123-4567', // Opcional: teléfono de contacto.
           email: 'info@tromen.example', // Opcional: email de contacto.
       },
+      
       {
-        title: 'Río Barrancas',
+        title: 'Volcán Domuyo',
+        description: 'Lugar fantastico!, caminos de cornisa, y la naturaleza increible, aguas termales que brotan del pie del volcan.',
+        images: [
+          'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/0a/50/37/7a/los-bolillos.jpg?w=1000&h=-1&s=1',
+          'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/0c/67/50/70/geiser-en-los-tachos.jpg?w=1000&h=-1&s=1',
+          'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/0a/50/36/a4/geiser-en-los-tachos.jpg?w=1000&h=-1&s=1'],
+
+          coordinates: { lat: -36.579711, lng: -70.421468 },
+          phone: '+54 9 299 234-5678',
+          email: 'contacto@barrancas.example',
+      },
+      {
+        title: 'Río Colorado',
         description: 'Perfecto para la pesca deportiva y disfrutar de la tranquilidad del entorno.',
-        image: 'https://picsum.photos/seed/barrancas/800/600',
+        images: [
+          'https://apn.lapampa.gob.ar/images/multimedia/153690_imagen-de-whatsapp-2024-01-04-a-las-13.30.44_0fadb52f.jpg',
+          'https://mtbbutaranquil.wordpress.com/wp-content/uploads/2013/09/laguna-el-aparato-unos-15-km-de-buta-ranquil1.jpg?w=900&h=509',
+          'https://pxcdn.laarena.com.ar/062023/1687719156461.jpeg'],
+
           coordinates: { lat: -36.88, lng: -69.87 },
           phone: '+54 9 299 234-5678',
           email: 'contacto@barrancas.example',
       },
       {
-        title: 'Bosques Petrificados',
-        description: 'Un viaje al pasado prehistórico de la Patagonia, con árboles convertidos en piedra.',
-        image: 'https://picsum.photos/seed/petrificados/800/600',
-          coordinates: { lat: -37.25, lng: -69.80 },
+        title: 'Los Cactus',
+        description: 'Es un lugar donde hay una especie de cactus (llamada Denmoza rhodacantha), y este sitio es su punto más austral de distribución.',
+        images: ['https://www.turismoruta40.com.ar/images/neuquen/cactus-pehuenco-600px.jpg'],
+
+          coordinates: { lat: -37.1449, lng: -69.6878 },
+          phone: '+54 9 299 234-5678',
+          email: 'contacto@barrancas.example',
+      },
+      {
+        title: 'Caverna La Salamanca',
+        description: 'Dista 2 km del pueblo, hacia Barrancas, por la Ruta 40. Situado en el paraje "Aguada de los Pajaritos", posee formaciones geológicas de gran valor científico y paisajístico.',
+        images: ['https://www.turismoruta40.com.ar/images/neuquen/caverna-salamanca-600px.jpg'],
+
+          coordinates: { lat: -37.03324924351327, lng: -69.87443933337082 },
           phone: '+54 9 299 345-6789',
           email: 'info@petrificados.example',
+      },
+      {
+        title: 'Cueva de la Manos',
+        description: 'Perfecto para la pesca deportiva y disfrutar de la tranquilidad del entorno.',
+        images: ['https://upload.wikimedia.org/wikipedia/commons/5/51/Marianoc_IMG_8565_copy.jpg'],
+        
+          coordinates: { lat: -36.88, lng: -69.87 },
+          phone: '+54 9 299 234-5678',
+          email: 'contacto@barrancas.example',
       },
     ],
   },
@@ -198,15 +238,24 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
   hotels: {
     title: 'Alojamiento recomendado',
     items: [
-      { title: 'Hostería El Tromen', description: 'Alojamiento familiar cerca del volcán.', image: 'https://picsum.photos/seed/hosteria1/800/600', coordinates: { lat: -37.14, lng: -70.02 }, phone: '+54 9 299 555-0001', email: 'reservas@hosteria-tromen.example' },
-      { title: 'Cabañas Río Barrancas', description: 'Cabañas con vista al río.', image: 'https://picsum.photos/seed/cabanas1/800/600', coordinates: { lat: -36.89, lng: -69.86 }, phone: '+54 9 299 555-0002', email: 'info@cabanas-barrancas.example' },
+      { title: 'Hotel el Porton', description: 'Confort y tradición en el corazón de Buta Ranquil.', 
+        images: ['https://lh3.googleusercontent.com/gps-cs-s/AC9h4nrOPy17ayaVUUrmiVkzZMGP7NH19ZWVaoYLy8T0EQ93K57nep91oolNt5Byusiq7ftkUTdFYMbhsVGQMnHzvhcYfpz5Lj1MH2LrRvRQmfnjW0IlTRuLOXlFcp9xMgPhDwNIAu7dHbT-mE8=s680-w680-h510-rw'], 
+        coordinates: { lat: -37.14, lng: -70.02 }, phone: '+54 9 299 555-0001', email: 'reservas@hosteria-tromen.example' },
+
+      { title: 'Portal Norte', description: 'Hospedaje confortable con vistas panorámicas.', 
+        images: ['https://dynamic-media-cdn.tripadvisor.com/media/partner/bookingcom/photo-o/30/0d/29/20/portal-norte.jpg?w=1000&h=-1&s=1'], 
+        coordinates: { lat: -36.89, lng: -69.86 }, phone: '+54 9 299 555-0002', email: 'info@cabanas-barrancas.example' },
+      
+      { title: 'Villa Butacoin3', description: 'Cabañas equipadas para una estancia inolvidable.', 
+        images: ['https://butacoin3.hoteles-neuquen-province.com/data/Images/1920x1080w/16302/1630275/1630275649/image-buta-ranquil-butacoin3-1.JPEG'], 
+        coordinates: { lat: -36.89, lng: -69.86 }, phone: '+54 9 299 555-0002', email: 'info@cabanas-barrancas.example' },
     ],
   },
   restaurants: {
     title: 'Gastronomía local',
     items: [
-      { title: 'Parrilla El Criollo', description: 'Asados y platos regionales.', image: 'https://picsum.photos/seed/parrilla1/800/600', coordinates: { lat: -37.06, lng: -69.92 }, phone: '+54 9 299 555-0101', email: 'contacto@parrilla-criollo.example' },
-      { title: 'Café de la Plaza', description: 'Cafetería y repostería local.', image: 'https://picsum.photos/seed/cafe1/800/600', coordinates: { lat: -37.05, lng: -69.91 }, phone: '+54 9 299 555-0102', email: 'hola@cafedelaplaza.example' },
+      { title: 'Parrilla El Criollo', description: 'Asados y platos regionales.', images: ['https://picsum.photos/seed/parrilla1/800/600'], coordinates: { lat: -37.06, lng: -69.92 }, phone: '+54 9 299 555-0101', email: 'contacto@parrilla-criollo.example' },
+      { title: 'Café de la Plaza', description: 'Cafetería y repostería local.', images: ['https://picsum.photos/seed/cafe1/800/600'], coordinates: { lat: -37.05, lng: -69.91 }, phone: '+54 9 299 555-0102', email: 'hola@cafedelaplaza.example' },
     ],
   },
 };
@@ -237,7 +286,7 @@ export const CHOS_MALAL_DATA: LocationPageData = {
         {
           title: 'Cerro de la Virgen',
           description: 'Ofrece una vista panorámica impresionante de la ciudad y el valle.',
-          image: 'https://picsum.photos/seed/cerro-virgen/800/600',
+          images: ['https://picsum.photos/seed/cerro-virgen/800/600'],
           coordinates: { lat: -37.37, lng: -70.27 },
           phone: '+54 9 299 987-6543',
           email: 'info@cerrovirgen.example',
@@ -245,7 +294,7 @@ export const CHOS_MALAL_DATA: LocationPageData = {
         {
           title: 'Museo Histórico Manuel José Olascoaga',
           description: 'Un recorrido por la historia de la fundación de Neuquén.',
-          image: 'https://picsum.photos/seed/museo-cm/800/600',
+          images: ['https://picsum.photos/seed/museo-cm/800/600'],
           coordinates: { lat: -37.38, lng: -70.27 },
           phone: '+54 9 299 876-5432',
           email: 'museo@chosmalal.example',
@@ -253,7 +302,7 @@ export const CHOS_MALAL_DATA: LocationPageData = {
         {
           title: 'Río Curi Leuvú',
           description: 'Un lugar ideal para el esparcimiento, la pesca y actividades acuáticas.',
-          image: 'https://picsum.photos/seed/curi-leuvu/800/600',
+          images: ['https://picsum.photos/seed/curi-leuvu/800/600'],
           coordinates: { lat: -37.36, lng: -70.25 },
           phone: '+54 9 299 765-4321',
           email: 'info@curileuvu.example',
@@ -323,15 +372,15 @@ export const CHOS_MALAL_DATA: LocationPageData = {
     hotels: {
       title: 'Alojamiento recomendado',
       items: [
-        { title: 'Hotel Mirador', description: 'Hotel céntrico con vista al cerro.', image: 'https://picsum.photos/seed/hotel1/800/600', coordinates: { lat: -37.375, lng: -70.27 }, phone: '+54 9 299 555-0201', email: 'reservas@hotelmirador.example' },
-        { title: 'Hostal Costanera', description: 'Económico y acogedor cerca del río.', image: 'https://picsum.photos/seed/hostal1/800/600', coordinates: { lat: -37.379, lng: -70.268 }, phone: '+54 9 299 555-0202', email: 'info@hostal-costanera.example' },
+        { title: 'Hotel Mirador', description: 'Hotel céntrico con vista al cerro.', images: ['https://picsum.photos/seed/hotel1/800/600'], coordinates: { lat: -37.375, lng: -70.27 }, phone: '+54 9 299 555-0201', email: 'reservas@hotelmirador.example' },
+        { title: 'Hostal Costanera', description: 'Económico y acogedor cerca del río.', images: ['https://picsum.photos/seed/hostal1/800/600'], coordinates: { lat: -37.379, lng: -70.268 }, phone: '+54 9 299 555-0202', email: 'info@hostal-costanera.example' },
       ],
     },
     restaurants: {
       title: 'Gastronomía local',
       items: [
-        { title: 'La Parrilla del Valle', description: 'Carnes y comidas regionales.', image: 'https://picsum.photos/seed/parrilla2/800/600', coordinates: { lat: -37.378, lng: -70.27 }, phone: '+54 9 299 555-0301', email: 'contacto@laparrilla.example' },
-        { title: 'Panadería Central', description: 'Pan y facturas frescas cada mañana.', image: 'https://picsum.photos/seed/panaderia1/800/600', coordinates: { lat: -37.379, lng: -70.269 }, phone: '+54 9 299 555-0302', email: 'hola@panaderiacentral.example' },
+        { title: 'La Parrilla del Valle', description: 'Carnes y comidas regionales.', images: ['https://picsum.photos/seed/parrilla2/800/600'], coordinates: { lat: -37.378, lng: -70.27 }, phone: '+54 9 299 555-0301', email: 'contacto@laparrilla.example' },
+        { title: 'Panadería Central', description: 'Pan y facturas frescas cada mañana.', images: ['https://picsum.photos/seed/panaderia1/800/600'], coordinates: { lat: -37.379, lng: -70.269 }, phone: '+54 9 299 555-0302', email: 'hola@panaderiacentral.example' },
       ],
     },
   };

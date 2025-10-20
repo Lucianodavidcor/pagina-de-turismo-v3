@@ -20,7 +20,8 @@ const AttractionCard: React.FC<Props> = ({ attraction, selected = false, onClick
   return (
     <div onClick={() => onClick?.(attraction)} className={`bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 cursor-pointer ${ringClass}`}>
       <div className="relative">
-  <img src={attraction.image} alt={attraction.title} loading="lazy" className="w-full h-44 object-cover bg-gray-100" />
+        {/* CORRECCIÓN 1: Usa la primera imagen del arreglo */}
+        <img src={attraction.images[0]} alt={attraction.title} loading="lazy" className="w-full h-44 object-cover bg-gray-100" />
         <div className="absolute bottom-2 left-2 bg-black/40 text-white px-3 py-1 rounded">{attraction.title}</div>
       </div>
       <div className="p-4">
@@ -38,9 +39,10 @@ const AttractionCard: React.FC<Props> = ({ attraction, selected = false, onClick
         {selected && (
           <div className="mt-4">
             <h4 className="font-semibold mb-2">Fotos</h4>
+            {/* CORRECCIÓN 2: Itera sobre el arreglo 'attraction.images' */}
             <div className="grid grid-cols-3 gap-2">
-                {[0,1,2].map((i) => (
-                <img key={i} src={attraction.image} alt={`gal${i}`} loading="lazy" className="w-full h-20 object-cover rounded cursor-pointer bg-gray-100" onClick={(e) => { e.stopPropagation(); setLightboxSrc(attraction.image); }} />
+              {attraction.images.map((img, i) => (
+                <img key={i} src={img} alt={`gal${i}`} loading="lazy" className="w-full h-20 object-cover rounded cursor-pointer bg-gray-100" onClick={(e) => { e.stopPropagation(); setLightboxSrc(img); }} />
               ))}
             </div>
             <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />

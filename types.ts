@@ -8,7 +8,7 @@ export interface NavLink {
 export interface Attraction {
   title: string;
   description: string;
-  image: string;
+  images: string[];
   coordinates: {
     lat: number;
     lng: number;

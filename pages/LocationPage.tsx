@@ -30,7 +30,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ data }) => {
                 <h3 className="text-2xl font-bold mb-4">{selected.title}</h3>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className="md:col-span-2">
-                    <img src={selected.image} alt={selected.title} loading="lazy" className="w-full h-64 object-cover rounded mb-4 bg-gray-100" />
+                    <img src={selected.images[0]} alt={selected.title} loading="lazy" className="w-full h-64 object-cover rounded mb-4 bg-gray-100" />
                     <p className="text-gray-700">{selected.description}</p>
                   </div>
                   <div className="p-4">
@@ -58,7 +58,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ data }) => {
             <div className="grid md:grid-cols-3 gap-6">
               {data.hotels.items.map((h, i) => (
                 <div key={i} className="bg-white rounded-lg shadow p-4">
-                  <img src={h.image} alt={h.title} loading="lazy" className="w-full h-40 object-cover rounded mb-3 bg-gray-100" />
+                  <img src={h.images[0]} alt={h.title} loading="lazy" className="w-full h-40 object-cover rounded mb-3 bg-gray-100" />
                   <h3 className="font-semibold text-lg">{h.title}</h3>
                   <p className="text-sm text-gray-600 mb-3">{h.description}</p>
                   <div className="text-sm text-gray-700 mb-3">
@@ -85,7 +85,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ data }) => {
             <div className="grid md:grid-cols-3 gap-6">
               {data.restaurants.items.map((r, i) => (
                 <div key={i} className="bg-white rounded-lg shadow p-4">
-                  <img src={r.image} alt={r.title} loading="lazy" className="w-full h-40 object-cover rounded mb-3 bg-gray-100" />
+                  <img src={r.images[0]} alt={r.title} loading="lazy" className="w-full h-40 object-cover rounded mb-3 bg-gray-100" />
                   <h3 className="font-semibold text-lg">{r.title}</h3>
                   <p className="text-sm text-gray-600 mb-3">{r.description}</p>
                   <div className="text-sm text-gray-700 mb-3">

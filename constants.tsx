@@ -1,6 +1,62 @@
 import React from 'react';
 import type { NavLink, LocationPageData, ForumPost } from './types';
 
+// =================================================================
+// GUÍA PARA AÑADIR NUEVAS LOCALIZACIONES Y DATOS
+// =================================================================
+// Para añadir una nueva localización, sigue estos pasos:
+//
+// 1. DUPLICAR UNA LOCALIZACIÓN EXISTENTE:
+//    Copia todo el bloque de `BUTA_RANQUIL_DATA` o `CHOS_MALAL_DATA`.
+//
+// 2. RENOMBRAR LA CONSTANTE:
+//    Cambia el nombre de la constante (p. ej., de `BUTA_RANQUIL_DATA` a `NUEVA_LOCALIZACION_DATA`).
+//
+// 3. ACTUALIZAR LOS DATOS BÁSICOS:
+//    - `name`: El nombre que se mostrará en la página (p. ej., "Villa Pehuenia").
+//    - `slug`: La URL amigable (p. ej., "villa-pehuenia"). Debe ser único.
+//    - `accentColor`: El color principal para la UI de la página ('orange', 'cyan', 'green').
+//    - `bookingButton`: `true` si quieres mostrar un botón de "Reservar ahora", `false` si no.
+//
+// 4. CONFIGURAR EL HERO SECTION:
+//    - `title`: Título principal que aparece en la imagen grande.
+//    - `subtitle`: Texto secundario debajo del título.
+//    - `image`: URL de la imagen de fondo.
+//
+// 5. DEFINIR LOS ENLACES DE NAVEGACIÓN:
+//    - `navLinks`: Son los enlaces que aparecen en el encabezado de la página de la localización.
+//      - `label`: El texto del enlace.
+//      - `href`: La ruta a la que apunta. Usa el `slug` que definiste (p. ej., `"/villa-pehuenia/atracciones"`).
+//
+// 6. AÑADIR ATRACCIONES, HOTELES Y RESTAURANTES:
+//    - Rellena `attractions`, `hotels`, y `restaurants`.
+//    - Cada elemento debe tener `title`, `description`, `image` y `coordinates`.
+//    - Opcionalmente, puedes añadir `phone` y `email`.
+//
+// 7. AÑADIR ACTIVIDADES:
+//    - En `activities`, cada `item` tiene `title`, `description` y un `icon`.
+//    - El ícono es un elemento de React, usualmente de FontAwesome (p. ej., `<i className="fa-solid fa-hiking" />`).
+//
+// 8. CONFIGURAR LA GALERÍA Y EL MAPA:
+//    - `gallery`: Añade URLs de imágenes para la galería.
+//    - `mapCenter`: Coordenadas [latitud, longitud] para centrar el mapa.
+//
+// 9. CREAR PÁGINAS DE DETALLE:
+//    - `detailPages`: Contenido para sub-páginas como "historia", "trekking", etc.
+//      - La clave (p. ej., 'trekking') debe coincidir con el `slug` de la URL.
+//      - `title`: Título de la página de detalle.
+//      - `content`: Puede ser texto simple o JSX más complejo.
+//
+// 10. ACTUALIZAR ARCHIVOS ADICIONALES:
+//     - Ve a `App.tsx` y añade una nueva ruta para tu localización:
+//       <Route path="/villa-pehuenia" element={<LocationPage data={NUEVA_LOCALIZACION_DATA} />} />
+//     - Añade un enlace en `HOME_NAV_LINKS` para que aparezca en el menú principal.
+// =================================================================
+
+/**
+ * @description Enlaces de navegación para la página de inicio.
+ * Cada objeto representa un enlace en la barra de navegación principal.
+ */
 export const HOME_NAV_LINKS: NavLink[] = [
   { label: 'Buta Ranquil', href: '/buta-ranquil' },
   { label: 'Chos Malal', href: '/chos-malal' },
@@ -8,22 +64,32 @@ export const HOME_NAV_LINKS: NavLink[] = [
   { label: 'Foro', href: '/foro' },
 ];
 
+// ========================================================
+// DATOS DE LA LOCALIZACIÓN: BUTA RANQUIL
+// ========================================================
 export const BUTA_RANQUIL_DATA: LocationPageData = {
-  name: 'Buta Ranquil',
-  slug: 'buta-ranquil',
-  accentColor: 'orange',
-  bookingButton: false,
+  // --- Configuración General ---
+  name: 'Buta Ranquil', // Nombre visible de la localidad.
+  slug: 'buta-ranquil', // Identificador para la URL (ej. /buta-ranquil).
+  accentColor: 'orange', // Color temático para esta sección ('orange', 'cyan', 'green').
+  bookingButton: false, // Define si se muestra o no el botón "Reservar ahora".
+
+  // --- Sección Principal (Hero) ---
   hero: {
-    title: 'Buta Ranquil: Aventura y Tradición',
-    subtitle: 'Descubrí un tesoro escondido en el norte neuquino.',
-    image: 'https://picsum.photos/seed/buta-ranquil-hero/1920/1080',
+    title: 'Buta Ranquil: Aventura y Tradición', // Título principal.
+    subtitle: 'Descubrí un tesoro escondido en el norte neuquino.', // Subtítulo.
+    image: 'https://picsum.photos/seed/buta-ranquil-hero/1920/1080', // URL de la imagen de fondo.
   },
+
+  // --- Enlaces de Navegación Específicos de la Página ---
   navLinks: [
     { label: 'Inicio', href: '/' },
     { label: 'Atracciones', href: '/buta-ranquil/atracciones' },
     { label: 'Actividades', href: '/buta-ranquil/actividades' },
     { label: 'Galería', href: '/buta-ranquil/galeria' },
   ],
+
+  // --- Listado de Atracciones Turísticas ---
   attractions: {
     title: 'Lugares que no te podés perder',
     items: [
@@ -31,9 +97,9 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
         title: 'Volcán Tromen',
         description: 'Un gigante dormido que domina el paisaje. Ideal para trekking y fotografía.',
         image: 'https://picsum.photos/seed/tromen/800/600',
-          coordinates: { lat: -37.13, lng: -70.03 },
-          phone: '+54 9 299 123-4567',
-          email: 'info@tromen.example',
+          coordinates: { lat: -37.13, lng: -70.03 }, // Coordenadas para el mapa.
+          phone: '+54 9 299 123-4567', // Opcional: teléfono de contacto.
+          email: 'info@tromen.example', // Opcional: email de contacto.
       },
       {
         title: 'Río Barrancas',
@@ -53,9 +119,12 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
       },
     ],
   },
+
+  // --- Listado de Actividades ---
   activities: {
     title: 'Aventuras para todos',
     items: [
+      // El ícono debe ser un componente de React. Aquí usamos FontAwesome.
       { title: 'Trekking', description: 'Explorá senderos únicos.', icon: <i className="fa-solid fa-hiking" /> },
       { title: 'Cabalgatas', description: 'Recorré paisajes a caballo.', icon: <i className="fa-solid fa-horse" /> },
       { title: 'Pesca', description: 'Disfrutá de ríos cristalinos.', icon: <i className="fa-solid fa-fish" /> },
@@ -64,6 +133,8 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
       { title: 'Kayak', description: 'Navegá por aguas tranquilas.', icon: <i className="fa-solid fa-water" /> },
     ],
   },
+
+  // --- Galería de Imágenes ---
   gallery: {
     title: 'Postales de Buta Ranquil',
     images: [
@@ -75,10 +146,13 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
       'https://picsum.photos/seed/br-gal6/600/400',
     ],
   },
+
+  // --- Páginas de Detalle ---
+  // Cada clave ('trekking', 'historia') corresponde a una URL (ej. /buta-ranquil/trekking).
   detailPages: {
     'trekking': {
       title: 'Trekking en Buta Ranquil',
-      content: <p>Descubre los mejores senderos para hacer trekking en la zona, desde caminatas familiares hasta ascensos desafiantes como el Volcán Tromen. La diversidad de paisajes te sorprenderá.</p>
+      content: <p>Descubre los mejores senderos para hacer trekking en la zona, desde caminatas familiares hasta ascensos desafiantes como el Volcán Tromen. La diversidad de paisajes te sorprenderá.</p> // El contenido puede ser JSX.
     },
     'historia': {
       title: 'Historia de Buta Ranquil',
@@ -116,7 +190,11 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
       )
     }
   },
-  mapCenter: [-37.05, -69.9],
+
+  // --- Configuración del Mapa ---
+  mapCenter: [-37.05, -69.9], // Coordenadas [lat, lng] para centrar el mapa.
+
+  // --- Opcional: Hoteles y Restaurantes ---
   hotels: {
     title: 'Alojamiento recomendado',
     items: [
@@ -133,6 +211,10 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
   },
 };
 
+// ========================================================
+// DATOS DE LA LOCALIZACIÓN: CHOS MALAL
+// (Sigue la misma estructura que Buta Ranquil)
+// ========================================================
 export const CHOS_MALAL_DATA: LocationPageData = {
     name: 'Chos Malal',
     slug: 'chos-malal',
@@ -254,13 +336,20 @@ export const CHOS_MALAL_DATA: LocationPageData = {
     },
   };
 
+// ========================================================
+// DATOS DEL FORO DE VIAJEROS
+// ========================================================
+/**
+ * @description Contenido de ejemplo para el foro de viajeros.
+ * Estos son los posts que se muestran en la página de inicio y en la sección del foro.
+ */
   export const FORUM_POSTS: ForumPost[] = [
     {
       author: 'Aventurero_88',
       avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
-      rating: 5,
+      rating: 5, // Rating de 1 a 5 estrellas.
       text: '¡El Volcán Tromen es increíble! Una caminata desafiante pero las vistas desde la cima valen cada paso. Recomiendo ir con guía. ¡Una experiencia inolvidable en Buta Ranquil!',
-      images: [
+      images: [ // Lista de URLs de imágenes adjuntas al post.
         'https://picsum.photos/seed/post1-img1/200/150',
         'https://picsum.photos/seed/post1-img2/200/150',
       ],

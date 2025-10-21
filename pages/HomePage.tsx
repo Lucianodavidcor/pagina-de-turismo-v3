@@ -11,7 +11,7 @@ const HomePage: React.FC = () => {
       <Header navLinks={HOME_NAV_LINKS} isHome={true} />
 
       {/* Hero Section */}
-      <section className="relative h-screen bg-cover bg-center text-white" style={{ backgroundImage: "url('https://picsum.photos/seed/neuquen-main/1920/1080')" }}>
+      <section className="relative h-screen bg-cover bg-center text-white" style={{ backgroundImage: "url('https://vantravellers.com/wp-content/uploads/2017/06/Chilecito-Ruta-40-scaled.jpg')" }}>
         <div className="absolute inset-0 bg-black/50"></div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
           <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-4">Descubre el Corazón de Neuquén: <br /> Buta Ranquil y Chos Malal</h1>
@@ -31,9 +31,9 @@ const HomePage: React.FC = () => {
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Destinos Imperdibles</h2>
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl.5 mx-auto">
             <div className="relative rounded-lg overflow-hidden shadow-lg transform hover:-translate-y-2 transition-transform duration-300">
-              <img src="https://picsum.photos/seed/buta-ranquil-card/600/400" alt="Buta Ranquil" className="w-full h-full object-cover" />
+              <img src="https://municipiosycomunas.com.ar/wp-content/uploads/2018/11/BUTA-RANQUIL.jpg" alt="Buta Ranquil" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/40"></div>
               <div className="absolute inset-0 p-8 flex flex-col justify-end text-white">
                 <h3 className="text-3xl font-bold mb-2">Buta Ranquil</h3>
@@ -44,7 +44,7 @@ const HomePage: React.FC = () => {
               </div>
             </div>
             <div className="relative rounded-lg overflow-hidden shadow-lg transform hover:-translate-y-2 transition-transform duration-300">
-              <img src="https://picsum.photos/seed/chos-malal-card/600/400" alt="Chos Malal" className="w-full h-full object-cover" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Fort%C3%ADn_IV_Divisi%C3%B3n_-_Chos_Malal_-_Provincia_del_Neuqu%C3%A9n.jpg/1200px-Fort%C3%ADn_IV_Divisi%C3%B3n_-_Chos_Malal_-_Provincia_del_Neuqu%C3%A9n.jpg" alt="Chos Malal" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/40"></div>
               <div className="absolute inset-0 p-8 flex flex-col justify-end text-white">
                 <h3 className="text-3xl font-bold mb-2">Chos Malal</h3>

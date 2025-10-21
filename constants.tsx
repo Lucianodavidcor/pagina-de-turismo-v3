@@ -103,7 +103,7 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
 
           coordinates: { lat: -37.13, lng: -70.03 }, // Coordenadas para el mapa.
           phone: '+54 9 299 123-4567', // Opcional: teléfono de contacto.
-          email: 'info@tromen.example', // Opcional: email de contacto.
+          email: 'info@butaranquil.example', // Opcional: email de contacto.
       },
       
       {
@@ -116,7 +116,7 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
 
           coordinates: { lat: -36.579711, lng: -70.421468 },
           phone: '+54 9 299 234-5678',
-          email: 'contacto@barrancas.example',
+          email: 'info@butaranquil.example',
       },
       {
         title: 'Río Colorado',
@@ -128,7 +128,7 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
 
           coordinates: { lat: -36.88, lng: -69.87 },
           phone: '+54 9 299 234-5678',
-          email: 'contacto@barrancas.example',
+          email: 'info@butaranquil.example',
       },
       {
         title: 'Los Cactus',
@@ -137,7 +137,7 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
 
           coordinates: { lat: -37.1449, lng: -69.6878 },
           phone: '+54 9 299 234-5678',
-          email: 'contacto@barrancas.example',
+          email: 'info@butaranquil.example',
       },
       {
         title: 'Caverna La Salamanca',
@@ -146,7 +146,7 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
 
           coordinates: { lat: -37.03324924351327, lng: -69.87443933337082 },
           phone: '+54 9 299 345-6789',
-          email: 'info@petrificados.example',
+          email: 'info@butaranquil.example',
       },
       {
         title: 'Cueva de la Manos',
@@ -155,7 +155,7 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
         
           coordinates: { lat: -36.88, lng: -69.87 },
           phone: '+54 9 299 234-5678',
-          email: 'contacto@barrancas.example',
+          email: 'info@butaranquil.example',
       },
     ],
   },
@@ -394,13 +394,13 @@ export const CHOS_MALAL_DATA: LocationPageData = {
  */
   export const FORUM_POSTS: ForumPost[] = [
     {
-      author: 'Aventurero_88',
-      avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
+      author: 'Ana María',
+      avatar: 'https://thumbs.dreamstime.com/b/mujer-joven-hermosa-31169974.jpg',
       rating: 5, // Rating de 1 a 5 estrellas.
       text: '¡El Volcán Tromen es increíble! Una caminata desafiante pero las vistas desde la cima valen cada paso. Recomiendo ir con guía. ¡Una experiencia inolvidable en Buta Ranquil!',
       images: [ // Lista de URLs de imágenes adjuntas al post.
-        'https://picsum.photos/seed/post1-img1/200/150',
-        'https://picsum.photos/seed/post1-img2/200/150',
+        'https://masneuquen.com/wp-content/uploads/2017/12/Area-natural-protegida-el-Tromen-Neuqu%C3%A9n-05.jpg',
+        'https://media.elpatagonico.com/p/5ad27784c0d9ea67c3a8aa44589b235a/adjuntos/193/imagenes/037/477/0037477766/1200x675/smart/chosmalal3jpg.jpg',
       ],
     },
     {
@@ -409,7 +409,8 @@ export const CHOS_MALAL_DATA: LocationPageData = {
       rating: 4,
       text: 'Chos Malal es un lugar con mucha historia. A nuestros hijos les encantó el museo y aprendimos mucho sobre los inicios de la provincia. La costanera del río es ideal para mates por la tarde.',
       images: [
-        'https://picsum.photos/seed/post2-img1/200/150',
+        'https://www.laangosturadigital.com.ar/wp-content/uploads/2024/01/museo-chos-malal-24-412348779_755553336608170_977211772401218623_n.jpg',
+        'https://media.lmneuquen.com/p/5173c4f1c85121773fac1797642344f8/adjuntos/195/imagenes/007/231/0007231806/chos-malal-postales-un-domingo-primavera-costanera-19jpg.jpg',
       ],
     },
   ];

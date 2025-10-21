@@ -108,7 +108,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ data }) => {
         <section id="actividades" className="py-20 scroll-mt-16">
             <div className="container mx-auto px-6">
                 <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">{activities.title}</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 max-w-6xl mx-auto">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
                     {activities.items.map((activity, index) => (
                         <ActivityCard key={index} activity={activity} accentColor={accentColor} />
                     ))}

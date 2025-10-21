@@ -37,7 +37,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
         <div className="mt-12 border-t border-gray-700 pt-6 text-center text-sm">
-          <p>&copy; 2024 Turismo Neuquén. Todos los derechos reservados.</p>
+          <p>&copy; 2025 LofSoft. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>

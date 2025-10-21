@@ -127,8 +127,7 @@ export const BUTA_RANQUIL_DATA: LocationPageData = {
           'https://pxcdn.laarena.com.ar/062023/1687719156461.jpeg'],
 
           coordinates: { lat: -36.88, lng: -69.87 },
-          phone: '+54 9 299 234-5678',
-          email: 'info@butaranquil.example',
+          
       },
       {
         title: 'Los Cactus',

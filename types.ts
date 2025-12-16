@@ -1,42 +1,24 @@
 import type { ReactElement, ReactNode } from 'react';
 
+// --- Entidades Base ---
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: 'USER' | 'ADMIN' | 'SUPERADMIN';
+  locationId?: number;
+}
+
 export interface NavLink {
+  id?: number;
   label: string;
   href: string;
+  orderPosition?: number;
 }
 
-export interface Attraction {
-  title: string;
-  description: string;
-  images: string[];
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
-  phone?: string;
-  email?: string;
-}
-
-export interface Activity {
-  title: string;
-  description: string;
-  icon: ReactElement;
-}
-
-export interface ForumPost {
-    author: string;
-    avatar: string;
-    rating: number;
-    text: string;
-    images: string[];
-}
-
-export interface DetailPageContent {
-    title: string;
-    content: ReactNode;
-}
-
-export interface LocationPageData {
+// --- Localidades ---
+export interface LocationData {
+  id: number;
   name: string;
   slug: string;
   accentColor: 'orange' | 'cyan' | 'green';
@@ -46,6 +28,50 @@ export interface LocationPageData {
     subtitle: string;
     image: string;
   };
+  mapCenter: {
+    lat: number;
+    lng: number;
+  };
+}
+
+// --- Atracciones ---
+export type AttractionType = 'attraction' | 'hotel' | 'restaurant';
+
+export interface Attraction {
+  id: number;
+  locationId: number;
+  type: AttractionType;
+  title: string;
+  description: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  phone?: string;
+  email?: string;
+  images: string[];
+}
+
+// --- Actividades ---
+export interface Activity {
+  id: number;
+  locationId: number;
+  title: string;
+  description: string;
+  iconClass: string; 
+  icon?: ReactElement; // Mantenemos compatibilidad opcional
+}
+
+// --- Páginas de Detalle ---
+export interface DetailPageContent {
+  id: number;
+  slug: string;
+  title: string;
+  content: string | ReactNode;
+}
+
+// --- Datos Completos de Página ---
+export interface LocationPageData extends LocationData {
   navLinks: NavLink[];
   attractions: {
     title: string;
@@ -68,5 +94,14 @@ export interface LocationPageData {
     images: string[];
   };
   detailPages: Record<string, DetailPageContent>;
-  mapCenter: [number, number];
+}
+
+export interface ForumPost {
+    id?: number;
+    author: string;
+    avatar: string;
+    rating: number;
+    text: string;
+    images: string[];
+    createdAt?: string;
 }

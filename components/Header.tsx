@@ -44,14 +44,12 @@ const Header: React.FC<HeaderProps> = ({
   // Lógica de estilos
   const isTransparent = isHome && !scrolled && !mobileMenuOpen;
   
-  // Si el menú está abierto, forzamos que el header sea transparente para que se funda con el overlay blanco
   const headerBgClass = mobileMenuOpen 
     ? 'bg-transparent' 
     : isTransparent 
         ? 'bg-transparent py-6' 
         : 'bg-white/95 backdrop-blur-md shadow-md py-3';
 
-  // Colores de texto según el estado
   const logoColorClass = (isTransparent && !mobileMenuOpen) ? 'text-white' : 'text-slate-800';
   const burgerColorClass = (isTransparent && !mobileMenuOpen) ? 'text-white' : 'text-slate-800';
 
@@ -59,8 +57,9 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${headerBgClass}`}>
-        <div className="container mx-auto px-6 flex justify-between items-center relative z-50">
+      {/* FIX: z-[1000] para que esté siempre encima del Mapa (que usa z-400+) */}
+      <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${headerBgClass}`}>
+        <div className="container mx-auto px-6 flex justify-between items-center relative z-[100]">
           
           {/* --- LOGO --- */}
           <Link to="/" className="flex items-center gap-2 group" onClick={() => setMobileMenuOpen(false)}>
@@ -139,7 +138,7 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* --- MOBILE BURGER MENU BUTTON --- */}
           <button 
-              className={`md:hidden text-2xl z-50 relative focus:outline-none transition-colors ${burgerColorClass}`}
+              className={`md:hidden text-2xl z-[1001] relative focus:outline-none transition-colors ${burgerColorClass}`}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
               <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
@@ -148,10 +147,9 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </header>
 
-      {/* --- MOBILE OVERLAY (FULL SCREEN) --- */}
-      {/* Usamos h-[100dvh] para que ocupe el alto real del móvil ignorando barras del navegador */}
+      {/* --- MOBILE OVERLAY --- */}
       <div 
-        className={`fixed inset-0 bg-white/95 backdrop-blur-xl z-40 transition-all duration-500 flex flex-col items-center justify-center space-y-8 h-[100dvh] w-screen ${
+        className={`fixed inset-0 bg-white/95 backdrop-blur-xl z-[999] transition-all duration-500 flex flex-col items-center justify-center space-y-8 h-[100dvh] w-screen ${
             mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
         }`}
       >

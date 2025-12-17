@@ -93,7 +93,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                 attraction={item} 
                 selected={selected?.title === item.title} 
                 onClick={(a) => { 
-                  // FIX: Seleccionamos y movemos el mapa, PERO SIN SCROLL
+                  // FIX: Seleccionamos y movemos el mapa, PERO SIN SCROLL AUTOMÁTICO MOLESTO
                   setSelected(a); 
                   if (mapRef.current && mapCenter) {
                     mapRef.current.openPopupAt?.(a.coordinates.lat, a.coordinates.lng);
@@ -165,7 +165,6 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                   attraction={h} 
                   accentColor={accentColor} 
                   onClick={(a) => {
-                      // FIX: Solo mueve el mapa, sin scroll
                       mapRef.current?.flyTo?.(a.coordinates.lat, a.coordinates.lng);
                   }} 
                 />
@@ -187,7 +186,6 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                   attraction={r} 
                   accentColor={accentColor} 
                   onClick={(a) => {
-                      // FIX: Solo mueve el mapa, sin scroll
                       mapRef.current?.flyTo?.(a.coordinates.lat, a.coordinates.lng);
                   }} 
                 />
@@ -209,32 +207,10 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
           </div>
       </section>
 
-      {/* SECCIÓN DE GALERÍA (Tu diseño mejorado) */}
-      <section id="galeria" className="py-20 bg-gray-50 scroll-mt-24">
-          <div className="container mx-auto px-6">
-            <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">{gallery.title}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {gallery.images.map((image, index) => (
-                <div 
-                    key={index} 
-                    onClick={() => openLightbox(index)}
-                    className="group relative aspect-square overflow-hidden rounded-xl shadow-md cursor-pointer transform transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <img 
-                    src={image} 
-                    alt={`Galería ${index + 1}`} 
-                    loading="lazy" 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <i className="fas fa-search-plus text-white text-3xl drop-shadow-lg"></i>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-      </section>   
-
+      {/* --- CAMBIO SOLICITADO --- 
+         MOVIMOS EL MAPA AQUÍ ARRIBA 
+      */}
+      
       {/* SECCIÓN DE MAPA (Tu diseño Premium, sin scroll automático) */}
       <section id="mapa-ubicacion" className="py-20 bg-slate-900 text-white scroll-mt-24">
         <div className="container mx-auto px-6">
@@ -269,6 +245,36 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
             </div>
         </div>
       </section>
+
+      {/* --- CAMBIO SOLICITADO --- 
+         LA GALERÍA AHORA ESTÁ DEBAJO DEL MAPA
+      */}
+
+      {/* SECCIÓN DE GALERÍA (Tu diseño mejorado) */}
+      <section id="galeria" className="py-20 bg-gray-50 scroll-mt-24">
+          <div className="container mx-auto px-6">
+            <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">{gallery.title}</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {gallery.images.map((image, index) => (
+                <div 
+                    key={index} 
+                    onClick={() => openLightbox(index)}
+                    className="group relative aspect-square overflow-hidden rounded-xl shadow-md cursor-pointer transform transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <img 
+                    src={image} 
+                    alt={`Galería ${index + 1}`} 
+                    loading="lazy" 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <i className="fas fa-search-plus text-white text-3xl drop-shadow-lg"></i>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+      </section>   
 
       {/* Lightbox */}
       <Lightbox 

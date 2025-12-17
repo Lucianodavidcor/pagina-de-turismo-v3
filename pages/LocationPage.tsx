@@ -29,12 +29,10 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // --- NEW: LÓGICA DE NAVEGACIÓN ENTRE ATRACCIONES ---
-  // 1. Calculamos el índice actual basado en el título (asumiendo títulos únicos)
+  // --- LÓGICA DE NAVEGACIÓN ENTRE ATRACCIONES ---
   const currentAttractionIndex = data?.attractions.items.findIndex(item => item.title === selected?.title) ?? -1;
   const isInsideAttractionsList = currentAttractionIndex !== -1;
 
-  // 2. Función para navegar (Prev/Next)
   const navigateAttraction = (direction: 'next' | 'prev') => {
     if (!data || !isInsideAttractionsList) return;
     
@@ -50,11 +48,8 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
 
     const newItem = list[newIndex];
     setSelected(newItem);
-
-    // Efecto WOW: Mover el mapa a la nueva atracción
     mapRef.current?.flyTo?.(newItem.coordinates.lat, newItem.coordinates.lng);
   };
-  // ---------------------------------------------------
 
   useEffect(() => {
     if (!loading && data && hash) {
@@ -171,19 +166,17 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
             >
               <div className="grid md:grid-cols-5 relative">
                 
-                {/* COLUMNA IZQUIERDA: CONTENIDO */}
+                {/* COLUMNA IZQUIERDA */}
                 <div className="md:col-span-3 p-8 md:p-10 flex flex-col h-full">
                    
-                   {/* UPDATED: HEADER CON NAVEGACIÓN (FLECHAS) */}
+                   {/* HEADER CON NAVEGACIÓN */}
                    <div className="flex flex-col-reverse md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                       <h3 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight tracking-tight">
                         {selected.title}
                       </h3>
                       
-                      {/* TOOLBAR DE NAVEGACIÓN */}
+                      {/* TOOLBAR */}
                       <div className="flex items-center gap-2 bg-gray-100 p-1.5 rounded-full self-end md:self-auto">
-                        
-                        {/* Botón Anterior */}
                         {isInsideAttractionsList && (
                             <button 
                                 onClick={() => navigateAttraction('prev')}
@@ -193,13 +186,9 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                                 <i className="fas fa-chevron-left transform group-hover:-translate-x-0.5 transition-transform"></i>
                             </button>
                         )}
-
-                        {/* Indicador o Separador (Opcional, aquí solo espacio) */}
                         {isInsideAttractionsList && (
                              <div className="w-px h-6 bg-gray-300 mx-1"></div>
                         )}
-
-                        {/* Botón Siguiente */}
                         {isInsideAttractionsList && (
                             <button 
                                 onClick={() => navigateAttraction('next')}
@@ -209,8 +198,6 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                                 <i className="fas fa-chevron-right transform group-hover:translate-x-0.5 transition-transform"></i>
                             </button>
                         )}
-                        
-                        {/* Botón Cerrar (Destacado diferente) */}
                         <button 
                             onClick={() => setSelected(null)} 
                             className="w-10 h-10 flex items-center justify-center rounded-full bg-red-100 hover:bg-red-200 text-red-500 hover:text-red-700 transition-colors ml-2 focus:outline-none"
@@ -282,7 +269,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                    </div>
                 </div>
                 
-                {/* COLUMNA DERECHA: INFO Y ACCIONES */}
+                {/* COLUMNA DERECHA */}
                 <div className="md:col-span-2 bg-gray-50/80 p-8 md:p-10 border-t md:border-t-0 md:border-l border-gray-100 flex flex-col justify-center">
                   
                   {(selected.phone || selected.email) && (
@@ -380,13 +367,39 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
         </section>
       )}
 
-      {/* SECCIÓN DE ACTIVIDADES */}
-      <section id="actividades" className="py-20 bg-white scroll-mt-24">
-          <div className="container mx-auto px-6">
-              <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">{activities.title}</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-center">
+      {/* --- SECCIÓN DE ACTIVIDADES (RENOVADA) --- */}
+      <section id="actividades" className="py-24 bg-gradient-to-b from-white to-gray-50 scroll-mt-24 relative overflow-hidden">
+          
+          {/* Elementos Decorativos de Fondo (Blobs) */}
+          <div className={`absolute top-0 right-0 w-[500px] h-[500px] bg-${accentColor}-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob`}></div>
+          <div className={`absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000`}></div>
+
+          <div className="container mx-auto px-6 relative z-10">
+              
+              <div className="text-center mb-16">
+                  <div className={`inline-block px-4 py-1 rounded-full bg-${accentColor}-50 text-${accentColor}-600 text-sm font-bold tracking-wide mb-4`}>
+                    EXPERIENCIAS ÚNICAS
+                  </div>
+                  <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight mb-6">
+                      {activities.title}
+                  </h2>
+                  <p className="text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
+                      No solo visites, <span className={`text-${accentColor}-600 font-semibold`}>vive el lugar</span>. Descubre las actividades mejor valoradas por los viajeros.
+                  </p>
+              </div>
+
+              {/* Grid Mejorada: Más espacio, menos columnas (4 en lugar de 6) para que luzcan las fotos */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                   {activities.items.map((act, i) => (
-                      <ActivityCard key={act.id || i} activity={act} accentColor={accentColor} />
+                      <div 
+                        key={act.id || i}
+                        className="transform transition-all duration-300 hover:-translate-y-2"
+                      >
+                          {/* Wrapper para añadir sombra extra al hover sin tocar el componente interno */}
+                          <div className="h-full rounded-xl hover:shadow-2xl transition-shadow duration-300 bg-white">
+                             <ActivityCard activity={act} accentColor={accentColor} />
+                          </div>
+                      </div>
                   ))}
               </div>
           </div>

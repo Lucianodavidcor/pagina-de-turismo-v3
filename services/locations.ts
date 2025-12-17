@@ -32,7 +32,6 @@ interface BackendAttraction {
   longitude: string | number;
   phone?: string;
   email?: string;
-  // TU BASE DE DATOS ENVÍA UN ARRAY DE OBJETOS, NO DE STRINGS
   images: BackendImageObj[] | null; 
 }
 
@@ -47,7 +46,7 @@ interface BackendActivity {
 interface BackendGalleryImage {
   id: number;
   location_id: number;
-  image_url: string; // En la tabla gallery_images la columna es image_url
+  image_url: string; 
   caption?: string;
 }
 
@@ -82,7 +81,6 @@ const adaptAttraction = (raw: BackendAttraction): Attraction => ({
   },
   phone: raw.phone,
   email: raw.email,
-  // CORRECCIÓN AQUÍ: Extraemos solo la URL del objeto de imagen
   images: raw.images && Array.isArray(raw.images) 
     ? raw.images.map((img) => img.url) 
     : [], 
@@ -96,7 +94,7 @@ const adaptActivity = (raw: BackendActivity): Activity => ({
   iconClass: raw.icon_class,
 });
 
-// --- SERVICIO PRINCIPAL ---
+// --- FUNCIONES DE LECTURA (PÚBLICAS) ---
 
 export const getLocationBySlug = async (slug: string): Promise<LocationPageData> => {
   try {
@@ -138,7 +136,6 @@ export const getLocationBySlug = async (slug: string): Promise<LocationPageData>
       },
       gallery: {
         title: `Galería de ${location.name}`,
-        // CORRECCIÓN AQUÍ: Mapeamos image_url (nombre de columna en DB) a string
         images: galleryRes.data.map(img => img.image_url)
       },
       navLinks: [
@@ -157,13 +154,9 @@ export const getLocationBySlug = async (slug: string): Promise<LocationPageData>
   }
 };
 
-// --- NUEVAS FUNCIONES PARA EL HOME ---
-
-// 1. Obtener todas las localidades (para las tarjetas del Home)
 export const getAllLocations = async (): Promise<LocationData[]> => {
   try {
     const { data } = await api.get<BackendLocation[]>('/locations');
-    // Reutilizamos el adaptador que ya creamos
     return data.map(adaptLocation);
   } catch (error) {
     console.error('Error fetching all locations:', error);
@@ -171,7 +164,6 @@ export const getAllLocations = async (): Promise<LocationData[]> => {
   }
 };
 
-// 2. Obtener galería por ID (para el grid de aventuras)
 export const getGalleryByLocationId = async (id: number): Promise<string[]> => {
   try {
     const { data } = await api.get<BackendGalleryImage[]>(`/gallery/location/${id}`);
@@ -180,4 +172,49 @@ export const getGalleryByLocationId = async (id: number): Promise<string[]> => {
     console.error(`Error fetching gallery for location ${id}:`, error);
     return [];
   }
+};
+
+// --- FUNCIONES DE ESCRITURA (ADMIN / SUPERADMIN) ---
+
+export const createLocation = async (data: Partial<LocationData>) => {
+    // Transformamos camelCase (Frontend) -> snake_case (Backend)
+    const payload = {
+        name: data.name,
+        slug: data.slug,
+        accent_color: data.accentColor,
+        booking_button: data.bookingButton,
+        hero_title: data.hero?.title,
+        hero_subtitle: data.hero?.subtitle,
+        hero_image: data.hero?.image,
+        map_center_lat: data.mapCenter?.lat,
+        map_center_lng: data.mapCenter?.lng
+    };
+    const { data: response } = await api.post('/locations', payload);
+    return response;
+};
+
+export const updateLocation = async (id: number, data: Partial<LocationData>) => {
+    // Solo enviamos los campos que vienen definidos
+    const payload: any = {};
+    
+    if (data.name) payload.name = data.name;
+    if (data.slug) payload.slug = data.slug;
+    if (data.accentColor) payload.accent_color = data.accentColor;
+    if (data.bookingButton !== undefined) payload.booking_button = data.bookingButton;
+    
+    // Objetos anidados: Backend espera campos planos (hero_title, etc.)
+    if (data.hero?.title) payload.hero_title = data.hero.title;
+    if (data.hero?.subtitle) payload.hero_subtitle = data.hero.subtitle;
+    if (data.hero?.image) payload.hero_image = data.hero.image;
+    
+    if (data.mapCenter?.lat) payload.map_center_lat = data.mapCenter.lat;
+    if (data.mapCenter?.lng) payload.map_center_lng = data.mapCenter.lng;
+
+    const { data: response } = await api.put(`/locations/${id}`, payload);
+    return response;
+};
+
+export const deleteLocation = async (id: number) => {
+    const { data } = await api.delete(`/locations/${id}`);
+    return data;
 };

@@ -55,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({
   const logoColorClass = (isTransparent && !mobileMenuOpen) ? 'text-white' : 'text-slate-800';
   const burgerColorClass = (isTransparent && !mobileMenuOpen) ? 'text-white' : 'text-slate-800';
 
-  const headerTitle = isHome ? 'Turismo Neuquén' : `Turismo ${locationName || ''}`;
+  const headerTitle = isHome ? 'Turismo Neuquén' : `Turismo ${locationName || 'Norte'}`;
 
   return (
     <>

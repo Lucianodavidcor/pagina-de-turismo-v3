@@ -1,55 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import Loader from '../components/ui/Loader'; // IMPORTANTE: Importamos el Loader
 import { HOME_NAV_LINKS } from '../constants';
-import { getAllLocations, getGalleryByLocationId } from '../services/locations';
-import { getPublicPosts, createPost, ForumPost } from '../services/forum';
+// Eliminamos imports de fetching directo (getAllLocations, etc) porque ahora lo hace el hook
+import { createPost, ForumPost } from '../services/forum';
 import { uploadImages } from '../services/content';
 import { useAuth } from '../context/AuthContext';
-import type { LocationData } from '../types';
+// IMPORTANTE: Importamos el hook de caché
+import { useHomeData } from '../hooks/useHomeData';
 
 const HomePage: React.FC = () => {
   const { user } = useAuth();
   
-  const [locations, setLocations] = useState<LocationData[]>([]);
-  const [adventureImages, setAdventureImages] = useState<string[]>([]);
-  const [forumPosts, setForumPosts] = useState<ForumPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  // --- LÓGICA DE CACHÉ Y CARGA ---
+  // Reemplazamos los useState y useEffect antiguos por esta sola línea.
+  // Al volver al home, 'loading' será false instantáneamente si ya hay datos.
+  const { locations, forumPosts, adventureImages, loading } = useHomeData();
 
-  // Formulario
+  // Estados locales solo para el formulario (esto no necesita caché)
   const [newPost, setNewPost] = useState({ text: '', rating: 5, locationId: 0, images: [] as string[] });
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
-  const [hoverRating, setHoverRating] = useState(0); // Para efecto estrellas
+  const [hoverRating, setHoverRating] = useState(0);
 
-  useEffect(() => {
-    fetchHomeData();
-  }, []);
-
-  const fetchHomeData = async () => {
-    try {
-      setLoading(true);
-      const [locs, posts] = await Promise.all([
-        getAllLocations(),
-        getPublicPosts()
-      ]);
-      setLocations(locs);
-      setForumPosts(posts.slice(0, 3)); // Solo las últimas 3
-
-      if (locs.length > 0) {
-        const galleryPromises = locs.map(loc => getGalleryByLocationId(loc.id));
-        const galleries = await Promise.all(galleryPromises);
-        const shuffled = galleries.flat().sort(() => 0.5 - Math.random());
-        setAdventureImages(shuffled.slice(0, 8));
-      }
-    } catch (error) {
-      console.error("Error cargando home:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // --- HANDLERS DEL FORMULARIO (Se mantienen igual) ---
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     setUploading(true);
@@ -93,6 +69,14 @@ const HomePage: React.FC = () => {
     }
   };
 
+  // --- RENDERIZADO ---
+  
+  // 1. Si está cargando (y no hay caché), mostramos tu animación nueva
+  if (loading) {
+    return <Loader />;
+  }
+
+  // 2. Si ya cargó, mostramos tu diseño intacto
   return (
     <div className="bg-white font-sans">
       <Header navLinks={HOME_NAV_LINKS} isHome={true} />
@@ -118,7 +102,8 @@ const HomePage: React.FC = () => {
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Destinos Imperdibles</h2>
           <div className="grid md:grid-cols-2 gap-8 w-full max-w-6xl mx-auto">
-              {loading ? <div className="col-span-2 text-center text-gray-500">Cargando destinos...</div> : locations.map((loc) => (
+              {/* Nota: loading ya se maneja arriba con el Loader, pero dejamos el map seguro */}
+              {locations.map((loc) => (
                 <div key={loc.id} className="relative rounded-2xl overflow-hidden shadow-xl transform hover:-translate-y-2 transition-transform duration-300 h-96 group cursor-pointer">
                   <img src={loc.hero.image} alt={loc.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-black/90 transition-colors"></div>

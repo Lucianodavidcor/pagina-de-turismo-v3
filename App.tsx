@@ -7,31 +7,35 @@ import PrivateRoute from './components/PrivateRoute';
 import HomePage from './pages/HomePage';
 import LocationPage from './pages/LocationPage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage'; // <--- Nueva
 import AdminDashboard from './pages/AdminDashboard';
-import ActivitiesPage from './pages/ActivitiesPage'; // <--- Importamos Actividades
-import ForumPage from './pages/ForumPage';           // <--- Importamos Foro
+import UserDashboard from './pages/UserDashboard'; // <--- Nueva
+import ActivitiesPage from './pages/ActivitiesPage';
+import ForumPage from './pages/ForumPage';
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
         <HashRouter>
             <Routes>
-                {/* 1. Rutas Estáticas Públicas (Prioridad Alta) */}
+                {/* Rutas Públicas */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<LoginPage />} />
-                
-                {/* Estas rutas deben ir ANTES de /:location para que no se confundan con una localidad */}
+                <Route path="/register" element={<RegisterPage />} />
                 <Route path="/actividades" element={<ActivitiesPage />} />
                 <Route path="/foro" element={<ForumPage />} />
 
-                {/* 2. Rutas Privadas (Protegidas) */}
+                {/* Rutas de Usuario Logueado (Cualquiera) */}
+                <Route element={<PrivateRoute />}> {/* PrivateRoute sin roles deja pasar a cualquier usuario logueado */}
+                    <Route path="/perfil" element={<UserDashboard />} />
+                </Route>
+
+                {/* Rutas de Admin */}
                 <Route element={<PrivateRoute roles={['ADMIN', 'SUPERADMIN']} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                 </Route>
 
-                {/* 3. Ruta Dinámica (Prioridad Baja - "Catch-all" para localidades) */}
-                {/* Cualquier ruta no definida arriba caerá aquí (ej: /chos-malal, /buta-ranquil) */}
+                {/* Ruta Dinámica (Catch-all) */}
                 <Route path="/:location" element={<LocationPage />} />
             </Routes>
         </HashRouter>

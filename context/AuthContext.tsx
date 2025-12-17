@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import api from '../lib/axios';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -21,7 +20,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Al cargar la app, verificar si hay sesión guardada
+    // Al iniciar, verificamos si hay sesión guardada en el navegador
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
@@ -44,7 +43,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
-    window.location.href = '/login';
+    window.location.href = '/login'; // Redirigir al login al salir
   };
 
   const value = {
@@ -54,6 +53,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     logout,
     isAuthenticated: !!user,
+    // Helper para saber si es algún tipo de admin
     isAdmin: user?.role === 'ADMIN' || user?.role === 'SUPERADMIN',
     isSuperAdmin: user?.role === 'SUPERADMIN',
   };
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth debe usarse dentro de un AuthProvider');
   }
   return context;
 };

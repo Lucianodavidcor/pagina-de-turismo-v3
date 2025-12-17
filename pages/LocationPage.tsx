@@ -22,12 +22,40 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
   // Estados locales
   const [selected, setSelected] = useState<Attraction | null>(null);
   const mapRef = useRef<MapHandle | null>(null);
+  const detailSectionRef = useRef<HTMLDivElement>(null);
 
-  // Estados para la Galería (Lightbox)
+  // Estados Lightbox
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Scroll automático SOLO inicial (si vienes de un link externo)
+  // --- NEW: LÓGICA DE NAVEGACIÓN ENTRE ATRACCIONES ---
+  // 1. Calculamos el índice actual basado en el título (asumiendo títulos únicos)
+  const currentAttractionIndex = data?.attractions.items.findIndex(item => item.title === selected?.title) ?? -1;
+  const isInsideAttractionsList = currentAttractionIndex !== -1;
+
+  // 2. Función para navegar (Prev/Next)
+  const navigateAttraction = (direction: 'next' | 'prev') => {
+    if (!data || !isInsideAttractionsList) return;
+    
+    const list = data.attractions.items;
+    const listLength = list.length;
+    let newIndex;
+
+    if (direction === 'next') {
+        newIndex = (currentAttractionIndex + 1) % listLength;
+    } else {
+        newIndex = (currentAttractionIndex - 1 + listLength) % listLength;
+    }
+
+    const newItem = list[newIndex];
+    setSelected(newItem);
+
+    // Efecto WOW: Mover el mapa a la nueva atracción
+    mapRef.current?.flyTo?.(newItem.coordinates.lat, newItem.coordinates.lng);
+  };
+  // ---------------------------------------------------
+
   useEffect(() => {
     if (!loading && data && hash) {
       const id = hash.replace('#', '');
@@ -40,20 +68,35 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
     }
   }, [loading, data, hash]);
 
-  // Funciones para la Galería
-  const openLightbox = (index: number) => {
+  useEffect(() => {
+    if (selected && detailSectionRef.current) {
+        setTimeout(() => {
+            detailSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
+  }, [selected]);
+
+
+  // Funciones de Galería
+  const openMainGallery = (index: number) => {
+    if (!data) return;
+    setLightboxImages(data.gallery.images);
     setCurrentImageIndex(index);
     setLightboxOpen(true);
   };
 
+  const openAttractionGallery = (images: string[], index: number = 0) => {
+    setLightboxImages(images); 
+    setCurrentImageIndex(index); 
+    setLightboxOpen(true);
+  }
+
   const handleNextImage = () => {
-    if (!data) return;
-    setCurrentImageIndex((prev) => (prev + 1) % data.gallery.images.length);
+    setCurrentImageIndex((prev) => (prev + 1) % lightboxImages.length);
   };
 
   const handlePrevImage = () => {
-    if (!data) return;
-    setCurrentImageIndex((prev) => (prev - 1 + data.gallery.images.length) % data.gallery.images.length);
+    setCurrentImageIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length);
   };
 
   if (loading) {
@@ -78,22 +121,38 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
 
   const { accentColor, attractions, activities, gallery, mapCenter } = data;
 
+  const getButtonStyle = (type: 'solid' | 'outline') => {
+    const base = "w-full py-3 rounded-lg text-sm font-bold transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow-md";
+    const colors = {
+        cyan: { solid: 'bg-cyan-600 hover:bg-cyan-700 text-white', outline: 'border-2 border-cyan-600 text-cyan-700 hover:bg-cyan-50' },
+        orange: { solid: 'bg-orange-600 hover:bg-orange-700 text-white', outline: 'border-2 border-orange-600 text-orange-700 hover:bg-orange-50' },
+        green: { solid: 'bg-green-600 hover:bg-green-700 text-white', outline: 'border-2 border-green-600 text-green-700 hover:bg-green-50' },
+    }[accentColor] || { solid: 'bg-gray-800 text-white', outline: 'border-gray-800 text-gray-800' };
+
+    return `${base} ${type === 'solid' ? colors.solid : colors.outline}`;
+  };
+
+
   return (
     <PageShell data={data}>
       
       {/* SECCIÓN DE ATRACCIONES */}
-      <section id="atracciones" className="py-12 bg-gray-50 scroll-mt-24">
-        <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">{attractions.title}</h2>
+      <section id="atracciones" className="py-16 bg-gray-50 scroll-mt-24 relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-gradient-to-b from-gray-100/50 to-transparent opacity-70 pointer-events-none"></div>
+
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="text-center mb-12">
+             <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-3">{attractions.title}</h2>
+             <p className="text-lg text-gray-600 max-w-2xl mx-auto">Los imperdibles que definen la esencia de este destino.</p>
+          </div>
           
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-8">
             {attractions.items.map((item, index) => (
               <AttractionCard 
                 key={item.id || index} 
                 attraction={item} 
                 selected={selected?.title === item.title} 
                 onClick={(a) => { 
-                  // FIX: Seleccionamos y movemos el mapa, PERO SIN SCROLL AUTOMÁTICO MOLESTO
                   setSelected(a); 
                   if (mapRef.current && mapCenter) {
                     mapRef.current.openPopupAt?.(a.coordinates.lat, a.coordinates.lng);
@@ -106,46 +165,172 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
 
           {/* DETALLE ATRACCIÓN */}
           {selected && (
-            <div className="mt-8 bg-white p-6 rounded-lg shadow-lg border border-gray-100 animate-fade-in">
-              <h3 className="text-2xl font-bold mb-4 flex justify-between items-center">
-                {selected.title}
-                <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">
-                  <i className="fas fa-times"></i>
-                </button>
-              </h3>
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="md:col-span-2">
-                  {selected.images.length > 0 ? (
-                    <img src={selected.images[0]} alt={selected.title} className="w-full h-64 object-cover rounded mb-4 bg-gray-200" />
-                  ) : (
-                    <div className="w-full h-64 bg-gray-200 rounded mb-4 flex items-center justify-center text-gray-500">Sin imagen disponible</div>
-                  )}
-                  <p className="text-gray-700 leading-relaxed">{selected.description}</p>
+            <div 
+                ref={detailSectionRef}
+                className="mt-16 bg-white rounded-[2rem] shadow-2xl border border-gray-100/80 overflow-hidden animate-fade-in-up relative scroll-mt-32 ring-1 ring-black/5"
+            >
+              <div className="grid md:grid-cols-5 relative">
+                
+                {/* COLUMNA IZQUIERDA: CONTENIDO */}
+                <div className="md:col-span-3 p-8 md:p-10 flex flex-col h-full">
+                   
+                   {/* UPDATED: HEADER CON NAVEGACIÓN (FLECHAS) */}
+                   <div className="flex flex-col-reverse md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                      <h3 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight tracking-tight">
+                        {selected.title}
+                      </h3>
+                      
+                      {/* TOOLBAR DE NAVEGACIÓN */}
+                      <div className="flex items-center gap-2 bg-gray-100 p-1.5 rounded-full self-end md:self-auto">
+                        
+                        {/* Botón Anterior */}
+                        {isInsideAttractionsList && (
+                            <button 
+                                onClick={() => navigateAttraction('prev')}
+                                className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-200 text-gray-600 hover:text-gray-900 shadow-sm transition-all focus:outline-none group"
+                                title="Atracción Anterior"
+                            >
+                                <i className="fas fa-chevron-left transform group-hover:-translate-x-0.5 transition-transform"></i>
+                            </button>
+                        )}
+
+                        {/* Indicador o Separador (Opcional, aquí solo espacio) */}
+                        {isInsideAttractionsList && (
+                             <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                        )}
+
+                        {/* Botón Siguiente */}
+                        {isInsideAttractionsList && (
+                            <button 
+                                onClick={() => navigateAttraction('next')}
+                                className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-200 text-gray-600 hover:text-gray-900 shadow-sm transition-all focus:outline-none group"
+                                title="Siguiente Atracción"
+                            >
+                                <i className="fas fa-chevron-right transform group-hover:translate-x-0.5 transition-transform"></i>
+                            </button>
+                        )}
+                        
+                        {/* Botón Cerrar (Destacado diferente) */}
+                        <button 
+                            onClick={() => setSelected(null)} 
+                            className="w-10 h-10 flex items-center justify-center rounded-full bg-red-100 hover:bg-red-200 text-red-500 hover:text-red-700 transition-colors ml-2 focus:outline-none"
+                            title="Cerrar Detalle"
+                        >
+                            <i className="fas fa-times text-lg"></i>
+                        </button>
+                      </div>
+                   </div>
+
+                   {/* IMAGEN PRINCIPAL */}
+                   <div 
+                     className="group relative h-[350px] md:h-[450px] w-full rounded-2xl overflow-hidden cursor-pointer shadow-lg mb-4 bg-gray-100"
+                     onClick={() => selected.images.length > 0 && openAttractionGallery(selected.images, 0)}
+                   >
+                      {selected.images.length > 0 ? (
+                        <>
+                          <img 
+                            src={selected.images[0]} 
+                            alt={selected.title} 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                          />
+                          {selected.images.length > 1 && (
+                            <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 pointer-events-none">
+                                <i className="fas fa-camera"></i>
+                                <span>1 / {selected.images.length}</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                              <div className="bg-white/90 text-gray-800 px-4 py-2 rounded-full flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 shadow-lg backdrop-blur-sm">
+                                <i className="fas fa-expand text-lg"></i>
+                                <span className="font-bold text-sm">Ver Galería</span>
+                              </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 font-medium bg-gray-50">
+                            <i className="fas fa-image text-4xl mb-2 opacity-50"></i>
+                            <span>Sin imagen disponible</span>
+                        </div>
+                      )}
+                   </div>
+
+                   {/* MINIATURAS */}
+                   {selected.images.length > 1 && (
+                     <div className="grid grid-cols-5 gap-3 mb-8">
+                        {selected.images.slice(0, 5).map((img, idx) => (
+                           <div 
+                             key={idx}
+                             onClick={() => openAttractionGallery(selected.images, idx)}
+                             className={`
+                               relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all duration-200
+                               ${idx === 0 ? `border-${accentColor}-500 ring-2 ring-${accentColor}-100` : 'border-transparent hover:border-gray-300'}
+                             `}
+                           >
+                             <img src={img} alt={`Vista ${idx}`} className="w-full h-full object-cover" />
+                             {idx === 4 && selected.images.length > 5 && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-sm">
+                                   +{selected.images.length - 5}
+                                </div>
+                             )}
+                           </div>
+                        ))}
+                     </div>
+                   )}
+
+                   <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed animate-fade-in">
+                     <p>{selected.description}</p>
+                   </div>
                 </div>
                 
-                <div className="bg-gray-50 p-4 rounded h-fit">
-                  <div className="space-y-3 mb-6">
-                    <div className="text-sm"><span className="font-bold block text-gray-800">Teléfono:</span> {selected.phone || 'No disponible'}</div>
-                    <div className="text-sm"><span className="font-bold block text-gray-800">Email:</span> {selected.email || 'No disponible'}</div>
-                  </div>
+                {/* COLUMNA DERECHA: INFO Y ACCIONES */}
+                <div className="md:col-span-2 bg-gray-50/80 p-8 md:p-10 border-t md:border-t-0 md:border-l border-gray-100 flex flex-col justify-center">
                   
-                  <div className="flex flex-col gap-2">
+                  {(selected.phone || selected.email) && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 animate-fade-in">
+                      <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                        <i className={`fas fa-info-circle mr-3 text-${accentColor}-600`}></i>
+                        Información Útil
+                      </h4>
+                      <div className="space-y-4">
+                        {selected.phone && (
+                           <div className="flex items-start">
+                             <i className="fas fa-phone-alt mt-1 mr-3 text-gray-400 w-5"></i>
+                             <div>
+                               <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Teléfono</span>
+                               <span className="text-gray-800 font-medium">{selected.phone}</span>
+                             </div>
+                           </div>
+                        )}
+                         {selected.email && (
+                           <div className="flex items-start">
+                             <i className="fas fa-envelope mt-1 mr-3 text-gray-400 w-5"></i>
+                             <div>
+                               <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Email</span>
+                               <span className="text-gray-800 font-medium break-all">{selected.email}</span>
+                             </div>
+                           </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-col gap-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
                     {selected.phone && (
-                      <a href={`tel:${selected.phone}`} className="w-full py-2 bg-white border border-gray-300 rounded text-center hover:bg-gray-100 text-sm font-medium transition">
-                        <i className="fas fa-phone mr-2"></i> Llamar
+                      <a href={`tel:${selected.phone}`} className={getButtonStyle('outline')}>
+                        <i className="fas fa-phone mr-3"></i> Llamar ahora
                       </a>
                     )}
                     <button 
-                      className={`w-full py-2 text-white rounded text-sm font-medium transition shadow-sm ${accentColor === 'orange' ? 'bg-orange-500 hover:bg-orange-600' : accentColor === 'cyan' ? 'bg-cyan-500 hover:bg-cyan-600' : 'bg-green-600 hover:bg-green-700'}`}
+                      className={getButtonStyle('solid')}
                       onClick={() => {
-                          // AQUÍ SÍ dejamos el scroll porque es un botón explícito de "Ver en Mapa"
                           mapRef.current?.flyTo?.(selected.coordinates.lat, selected.coordinates.lng);
                           document.getElementById('mapa-ubicacion')?.scrollIntoView({ behavior: 'smooth' });
                       }}
                     >
-                      <i className="fas fa-map-marker-alt mr-2"></i> Ver en Mapa
+                      <i className="fas fa-map-marker-alt mr-3 animate-bounce-slow"></i> Ver ubicación en Mapa
                     </button>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -155,10 +340,10 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
 
       {/* SECCIÓN DE HOTELES */}
       {data.hotels && data.hotels.items.length > 0 && (
-        <section id="hoteles" className="py-12 bg-white scroll-mt-24">
+        <section id="hoteles" className="py-16 bg-white scroll-mt-24">
           <div className="container mx-auto px-6">
-            <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">{data.hotels.title}</h2>
-            <div className="grid md:grid-cols-3 gap-6">
+            <h2 className="text-3xl font-bold text-center text-gray-800 mb-10">{data.hotels.title}</h2>
+            <div className="grid md:grid-cols-3 gap-8">
               {data.hotels.items.map((h, i) => (
                 <AttractionCard 
                   key={h.id || i} 
@@ -176,10 +361,10 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
 
       {/* SECCIÓN DE RESTAURANTES */}
       {data.restaurants && data.restaurants.items.length > 0 && (
-        <section id="restaurantes" className="py-12 bg-gray-50 scroll-mt-24">
+        <section id="restaurantes" className="py-16 bg-gray-50 scroll-mt-24">
           <div className="container mx-auto px-6">
-            <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">{data.restaurants.title}</h2>
-            <div className="grid md:grid-cols-3 gap-6">
+            <h2 className="text-3xl font-bold text-center text-gray-800 mb-10">{data.restaurants.title}</h2>
+            <div className="grid md:grid-cols-3 gap-8">
               {data.restaurants.items.map((r, i) => (
                 <AttractionCard 
                   key={r.id || i} 
@@ -207,20 +392,14 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
           </div>
       </section>
 
-      {/* --- CAMBIO SOLICITADO --- 
-         MOVIMOS EL MAPA AQUÍ ARRIBA 
-      */}
-      
-      {/* SECCIÓN DE MAPA (Tu diseño Premium, sin scroll automático) */}
+      {/* SECCIÓN DE MAPA */}
       <section id="mapa-ubicacion" className="py-20 bg-slate-900 text-white scroll-mt-24">
         <div className="container mx-auto px-6">
-            
             <div className="text-center mb-10">
                 <h2 className="text-4xl font-extrabold mb-4 tracking-tight">Ubicación y Puntos de Interés</h2>
                 <p className="text-slate-400 max-w-2xl mx-auto text-lg">Explora la geografía única de esta zona y encuentra fácilmente todas las atracciones en nuestro mapa interactivo.</p>
                 <div className="w-24 h-1 bg-cyan-500 mx-auto rounded-full mt-6"></div>
             </div>
-
             <div className="relative z-0 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-800 bg-slate-800">
                 {mapCenter ? (
                     <Map 
@@ -233,12 +412,11 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                         ]} 
                         onSelect={(a) => {
                             setSelected(a);
-                            // FIX: Eliminado scroll hacia arriba al tocar el mapa
                         }} 
                         height="h-[500px] md:h-[600px]" 
                     />
                 ) : (
-                    <div className="w-full h-[500px] flex items-center justify-center bg-slate-800 text-slate-500">
+                    <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500">
                         Cargando mapa...
                     </div>
                 )}
@@ -246,11 +424,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
         </div>
       </section>
 
-      {/* --- CAMBIO SOLICITADO --- 
-         LA GALERÍA AHORA ESTÁ DEBAJO DEL MAPA
-      */}
-
-      {/* SECCIÓN DE GALERÍA (Tu diseño mejorado) */}
+      {/* SECCIÓN DE GALERÍA */}
       <section id="galeria" className="py-20 bg-gray-50 scroll-mt-24">
           <div className="container mx-auto px-6">
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">{gallery.title}</h2>
@@ -258,7 +432,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                 {gallery.images.map((image, index) => (
                 <div 
                     key={index} 
-                    onClick={() => openLightbox(index)}
+                    onClick={() => openMainGallery(index)} 
                     className="group relative aspect-square overflow-hidden rounded-xl shadow-md cursor-pointer transform transition duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
                   <img 
@@ -278,7 +452,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
 
       {/* Lightbox */}
       <Lightbox 
-        images={gallery.images} 
+        images={lightboxImages} 
         isOpen={lightboxOpen} 
         onClose={() => setLightboxOpen(false)} 
         currentIndex={currentImageIndex}

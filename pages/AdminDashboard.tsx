@@ -18,11 +18,16 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
 
-  // Estado para Edición de Localidad
+  // --- ESTADOS PARA LOCALIDADES ---
   const [editingLoc, setEditingLoc] = useState<Partial<LocationData> | null>(null);
   const [isLocModalOpen, setIsLocModalOpen] = useState(false);
 
-  // Estado para Edición de Usuario (inline en la tabla)
+  // --- ESTADOS PARA USUARIOS ---
+  // Para crear nuevo usuario
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'ADMIN', locationId: 0 });
+  
+  // Para editar usuario existente (inline en tabla)
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [tempUserRole, setTempUserRole] = useState<string>('');
   const [tempUserLoc, setTempUserLoc] = useState<number | string>('');
@@ -49,8 +54,21 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // --- HANDLERS USUARIOS ---
+  // --- HANDLERS USUARIOS (CREAR) ---
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+        await registerAdmin(newUser);
+        setMsg({ type: 'success', text: '¡Usuario creado exitosamente!' });
+        setIsUserModalOpen(false);
+        setNewUser({ name: '', email: '', password: '', role: 'ADMIN', locationId: 0 }); // Reset
+        loadData();
+    } catch (error: any) {
+        setMsg({ type: 'error', text: error.response?.data?.message || 'Error al crear usuario' });
+    }
+  };
 
+  // --- HANDLERS USUARIOS (EDITAR/BORRAR) ---
   const startEditUser = (u: User) => {
     setEditingUserId(u.id);
     setTempUserRole(u.role);
@@ -85,12 +103,10 @@ const AdminDashboard: React.FC = () => {
   };
 
   // --- HANDLERS LOCALIDADES ---
-
   const openLocModal = (loc?: LocationData) => {
     if (loc) {
-        setEditingLoc(JSON.parse(JSON.stringify(loc))); // Deep copy simple
+        setEditingLoc(JSON.parse(JSON.stringify(loc))); 
     } else {
-        // Inicializar vacío para crear
         setEditingLoc({
             name: '', slug: '', accentColor: 'orange', bookingButton: false,
             hero: { title: '', subtitle: '', image: '' },
@@ -156,7 +172,6 @@ const AdminDashboard: React.FC = () => {
           )}
 
           <div className="pt-4 pb-1 px-3 text-xs font-semibold text-gray-500 uppercase">Contenido</div>
-          {/* Aquí irían las tabs de contenido real */}
           <MenuButton icon="umbrella-beach" label="Atracciones" active={activeTab === 'atracciones'} onClick={() => setActiveTab('atracciones')} />
         </nav>
 
@@ -174,7 +189,7 @@ const AdminDashboard: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-800 capitalize">{activeTab}</h2>
             <div className="flex items-center gap-4">
                 {msg.text && (
-                    <span className={`text-sm px-3 py-1 rounded ${msg.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <span className={`text-sm px-3 py-1 rounded animate-fade-in ${msg.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {msg.text}
                     </span>
                 )}
@@ -190,95 +205,107 @@ const AdminDashboard: React.FC = () => {
             
             {/* --- TAB: USUARIOS --- */}
             {activeTab === 'usuarios' && isSuperAdmin && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="p-4 border-b bg-gray-50 font-bold text-gray-700 flex justify-between">
-                        <span>Gestión de Usuarios</span>
-                        <span className="text-xs font-normal text-gray-500">Edita roles directamente en la tabla</span>
+                <div>
+                     <div className="flex justify-between items-center mb-6">
+                        <h3 className="font-bold text-lg text-gray-700">Gestión de Usuarios</h3>
+                        <button onClick={() => setIsUserModalOpen(true)} className="bg-cyan-600 text-white px-4 py-2 rounded hover:bg-cyan-700 shadow">
+                            + Nuevo Usuario
+                        </button>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3">Usuario</th>
-                                    <th className="px-6 py-3">Rol Actual</th>
-                                    <th className="px-6 py-3">Localidad Asignada</th>
-                                    <th className="px-6 py-3 text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {users.map(u => (
-                                    <tr key={u.id} className="bg-white border-b hover:bg-gray-50">
-                                        <td className="px-6 py-4">
-                                            <div className="font-medium text-gray-900">{u.name}</div>
-                                            <div className="text-gray-500 text-xs">{u.email}</div>
-                                        </td>
-                                        
-                                        {/* MODO EDICIÓN */}
-                                        {editingUserId === u.id ? (
-                                            <>
-                                                <td className="px-6 py-4">
-                                                    <select 
-                                                        className="border rounded p-1 w-full"
-                                                        value={tempUserRole}
-                                                        onChange={(e) => setTempUserRole(e.target.value)}
-                                                    >
-                                                        <option value="USER">Usuario (Sin permisos)</option>
-                                                        <option value="ADMIN">Admin Localidad</option>
-                                                        <option value="SUPERADMIN">Super Admin</option>
-                                                    </select>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {tempUserRole === 'ADMIN' ? (
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3">Usuario</th>
+                                        <th className="px-6 py-3">Rol</th>
+                                        <th className="px-6 py-3">Localidad Asignada</th>
+                                        <th className="px-6 py-3 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {users.map(u => (
+                                        <tr key={u.id} className="bg-white border-b hover:bg-gray-50">
+                                            <td className="px-6 py-4">
+                                                <div className="font-medium text-gray-900">{u.name}</div>
+                                                <div className="text-gray-500 text-xs">{u.email}</div>
+                                            </td>
+                                            
+                                            {/* MODO EDICIÓN */}
+                                            {editingUserId === u.id ? (
+                                                <>
+                                                    <td className="px-6 py-4">
                                                         <select 
                                                             className="border rounded p-1 w-full"
-                                                            value={tempUserLoc}
-                                                            onChange={(e) => setTempUserLoc(e.target.value)}
+                                                            value={tempUserRole}
+                                                            onChange={(e) => setTempUserRole(e.target.value)}
                                                         >
-                                                            <option value="">Seleccionar...</option>
-                                                            {locations.map(l => (
-                                                                <option key={l.id} value={l.id}>{l.name}</option>
-                                                            ))}
+                                                            <option value="USER">Usuario (Sin permisos)</option>
+                                                            <option value="ADMIN">Admin Localidad</option>
+                                                            <option value="SUPERADMIN">Super Admin</option>
                                                         </select>
-                                                    ) : (
-                                                        <span className="text-gray-400">-</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-right space-x-2">
-                                                    <button onClick={() => handleUpdateUser(u.id)} className="text-green-600 hover:text-green-800 font-bold">Guardar</button>
-                                                    <button onClick={cancelEditUser} className="text-gray-500 hover:text-gray-700">Cancelar</button>
-                                                </td>
-                                            </>
-                                        ) : (
-                                            /* MODO LECTURA */
-                                            <>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                                        u.role === 'SUPERADMIN' ? 'bg-purple-100 text-purple-800' :
-                                                        u.role === 'ADMIN' ? 'bg-green-100 text-green-800' :
-                                                        'bg-gray-100 text-gray-800'
-                                                    }`}>
-                                                        {u.role}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {u.locationId ? locations.find(l => l.id === u.locationId)?.name || u.locationId : '-'}
-                                                </td>
-                                                <td className="px-6 py-4 text-right space-x-2">
-                                                    <button onClick={() => startEditUser(u)} className="text-blue-600 hover:text-blue-800">
-                                                        <i className="fas fa-edit"></i>
-                                                    </button>
-                                                    {u.id !== user.id && (
-                                                        <button onClick={() => handleDeleteUser(u.id)} className="text-red-600 hover:text-red-800">
-                                                            <i className="fas fa-trash"></i>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {tempUserRole === 'ADMIN' ? (
+                                                            <select 
+                                                                className="border rounded p-1 w-full"
+                                                                value={tempUserLoc}
+                                                                onChange={(e) => setTempUserLoc(e.target.value)}
+                                                            >
+                                                                <option value="">Seleccionar...</option>
+                                                                {locations.map(l => (
+                                                                    <option key={l.id} value={l.id}>{l.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        ) : (
+                                                            <span className="text-gray-400 text-xs italic">No aplica</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right space-x-2">
+                                                        <button onClick={() => handleUpdateUser(u.id)} className="text-green-600 hover:text-green-800 font-bold text-xs uppercase">Guardar</button>
+                                                        <button onClick={cancelEditUser} className="text-gray-500 hover:text-gray-700 text-xs uppercase">Cancelar</button>
+                                                    </td>
+                                                </>
+                                            ) : (
+                                                /* MODO LECTURA */
+                                                <>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                            u.role === 'SUPERADMIN' ? 'bg-purple-100 text-purple-800' :
+                                                            u.role === 'ADMIN' ? 'bg-green-100 text-green-800' :
+                                                            'bg-gray-100 text-gray-800'
+                                                        }`}>
+                                                            {u.role}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {/* AQUÍ ESTABA EL BUG: Ahora u.locationId ya existe gracias al adaptador */}
+                                                        {u.role === 'ADMIN' ? (
+                                                             u.locationId 
+                                                                ? <span className="text-cyan-700 font-medium">{locations.find(l => l.id === u.locationId)?.name || `ID: ${u.locationId}`}</span>
+                                                                : <span className="text-red-500 text-xs">⚠ Sin Asignar</span>
+                                                        ) : (
+                                                            <span className="text-gray-400">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right space-x-2">
+                                                        <button onClick={() => startEditUser(u)} className="text-blue-600 hover:text-blue-800" title="Editar Rol">
+                                                            <i className="fas fa-edit"></i>
                                                         </button>
-                                                    )}
-                                                </td>
-                                            </>
-                                        )}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                                        {u.id !== user.id && (
+                                                            <button onClick={() => handleDeleteUser(u.id)} className="text-red-600 hover:text-red-800" title="Eliminar Usuario">
+                                                                <i className="fas fa-trash"></i>
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </>
+                                            )}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}
@@ -295,10 +322,10 @@ const AdminDashboard: React.FC = () => {
 
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {locations.map(loc => (
-                            <div key={loc.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden group">
+                            <div key={loc.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden group hover:shadow-md transition">
                                 <div className="h-32 bg-gray-200 relative">
                                     <img src={loc.hero.image} alt={loc.name} className="w-full h-full object-cover" />
-                                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                                         <button onClick={() => openLocModal(loc)} className="bg-white p-2 rounded-full text-blue-600 shadow hover:bg-blue-50">
                                             <i className="fas fa-pen"></i>
                                         </button>
@@ -308,13 +335,15 @@ const AdminDashboard: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="p-4">
-                                    <h4 className="font-bold text-lg">{loc.name}</h4>
+                                    <h4 className="font-bold text-lg text-gray-800">{loc.name}</h4>
                                     <p className="text-xs text-gray-500 mb-2">Slug: /{loc.slug}</p>
-                                    <div className="flex gap-2 text-xs">
-                                        <span className={`px-2 py-1 rounded bg-${loc.accentColor === 'orange' ? 'orange' : loc.accentColor === 'cyan' ? 'cyan' : 'green'}-100 text-gray-700 border`}>
-                                            Color: {loc.accentColor}
-                                        </span>
-                                    </div>
+                                    <span className={`text-xs px-2 py-0.5 rounded border ${
+                                        loc.accentColor === 'cyan' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' : 
+                                        loc.accentColor === 'orange' ? 'bg-orange-50 text-orange-700 border-orange-200' : 
+                                        'bg-green-50 text-green-700 border-green-200'
+                                    }`}>
+                                        Color: {loc.accentColor}
+                                    </span>
                                 </div>
                             </div>
                         ))}
@@ -324,9 +353,21 @@ const AdminDashboard: React.FC = () => {
 
             {/* --- TAB: RESUMEN (DEFAULT) --- */}
             {activeTab === 'resumen' && (
-                <div className="bg-white p-8 rounded shadow text-center">
-                    <h2 className="text-2xl font-bold mb-2">Panel de Control</h2>
-                    <p className="text-gray-600">Selecciona una opción del menú lateral.</p>
+                <div className="bg-white p-10 rounded shadow-sm border border-gray-100 text-center">
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Panel de Control</h2>
+                    <p className="text-gray-600 mb-6">Selecciona una opción del menú lateral para comenzar a gestionar el contenido.</p>
+                    <div className="flex justify-center gap-4">
+                         <div className="text-center p-4 bg-gray-50 rounded border w-32">
+                             <div className="text-2xl font-bold text-cyan-600">{locations.length}</div>
+                             <div className="text-xs text-gray-500 uppercase">Localidades</div>
+                         </div>
+                         {isSuperAdmin && (
+                             <div className="text-center p-4 bg-gray-50 rounded border w-32">
+                                <div className="text-2xl font-bold text-purple-600">{users.length}</div>
+                                <div className="text-xs text-gray-500 uppercase">Usuarios</div>
+                            </div>
+                         )}
+                    </div>
                 </div>
             )}
             
@@ -334,27 +375,28 @@ const AdminDashboard: React.FC = () => {
 
         {/* --- MODAL CREAR/EDITAR LOCALIDAD --- */}
         {isLocModalOpen && editingLoc && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <div className="p-6 border-b">
-                        <h3 className="text-xl font-bold">{editingLoc.id ? 'Editar Localidad' : 'Nueva Localidad'}</h3>
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in">
+                    <div className="p-6 border-b flex justify-between items-center">
+                        <h3 className="text-xl font-bold text-gray-800">{editingLoc.id ? 'Editar Localidad' : 'Nueva Localidad'}</h3>
+                        <button onClick={() => setIsLocModalOpen(false)} className="text-gray-400 hover:text-gray-600"><i className="fas fa-times"></i></button>
                     </div>
                     <form onSubmit={handleSaveLocation} className="p-6 space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-bold mb-1">Nombre</label>
-                                <input className="w-full border p-2 rounded" value={editingLoc.name} onChange={e => setEditingLoc({...editingLoc, name: e.target.value})} required />
+                                <input className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" value={editingLoc.name} onChange={e => setEditingLoc({...editingLoc, name: e.target.value})} required />
                             </div>
                             <div>
                                 <label className="block text-sm font-bold mb-1">Slug (URL)</label>
-                                <input className="w-full border p-2 rounded" value={editingLoc.slug} onChange={e => setEditingLoc({...editingLoc, slug: e.target.value})} required />
+                                <input className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" value={editingLoc.slug} onChange={e => setEditingLoc({...editingLoc, slug: e.target.value})} required />
                             </div>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-bold mb-1">Color Acento</label>
-                                <select className="w-full border p-2 rounded" value={editingLoc.accentColor} onChange={e => setEditingLoc({...editingLoc, accentColor: e.target.value as any})}>
+                                <select className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" value={editingLoc.accentColor} onChange={e => setEditingLoc({...editingLoc, accentColor: e.target.value as any})}>
                                     <option value="orange">Naranja</option>
                                     <option value="cyan">Cyan</option>
                                     <option value="green">Verde</option>
@@ -362,7 +404,7 @@ const AdminDashboard: React.FC = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-bold mb-1">Mostrar Botón Reserva</label>
-                                <select className="w-full border p-2 rounded" value={editingLoc.bookingButton ? 'yes' : 'no'} onChange={e => setEditingLoc({...editingLoc, bookingButton: e.target.value === 'yes'})}>
+                                <select className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" value={editingLoc.bookingButton ? 'yes' : 'no'} onChange={e => setEditingLoc({...editingLoc, bookingButton: e.target.value === 'yes'})}>
                                     <option value="no">No</option>
                                     <option value="yes">Sí</option>
                                 </select>
@@ -370,25 +412,81 @@ const AdminDashboard: React.FC = () => {
                         </div>
 
                         <div className="border-t pt-4">
-                            <h4 className="font-bold mb-2 text-gray-600">Sección Hero (Portada)</h4>
+                            <h4 className="font-bold mb-2 text-gray-600 text-sm uppercase">Sección Hero (Portada)</h4>
                             <div className="space-y-3">
-                                <input placeholder="Título Hero" className="w-full border p-2 rounded" value={editingLoc.hero?.title} onChange={e => setEditingLoc({...editingLoc, hero: {...editingLoc.hero!, title: e.target.value}})} required />
-                                <input placeholder="Subtítulo" className="w-full border p-2 rounded" value={editingLoc.hero?.subtitle} onChange={e => setEditingLoc({...editingLoc, hero: {...editingLoc.hero!, subtitle: e.target.value}})} />
-                                <input placeholder="URL Imagen Fondo" className="w-full border p-2 rounded" value={editingLoc.hero?.image} onChange={e => setEditingLoc({...editingLoc, hero: {...editingLoc.hero!, image: e.target.value}})} required />
+                                <input placeholder="Título Principal" className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" value={editingLoc.hero?.title} onChange={e => setEditingLoc({...editingLoc, hero: {...editingLoc.hero!, title: e.target.value}})} required />
+                                <input placeholder="Subtítulo" className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" value={editingLoc.hero?.subtitle} onChange={e => setEditingLoc({...editingLoc, hero: {...editingLoc.hero!, subtitle: e.target.value}})} />
+                                <input placeholder="URL Imagen Fondo" className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" value={editingLoc.hero?.image} onChange={e => setEditingLoc({...editingLoc, hero: {...editingLoc.hero!, image: e.target.value}})} required />
                             </div>
                         </div>
 
                         <div className="border-t pt-4">
-                            <h4 className="font-bold mb-2 text-gray-600">Ubicación (Mapa)</h4>
+                            <h4 className="font-bold mb-2 text-gray-600 text-sm uppercase">Mapa</h4>
                             <div className="grid grid-cols-2 gap-4">
-                                <input type="number" step="any" placeholder="Latitud" className="w-full border p-2 rounded" value={editingLoc.mapCenter?.lat} onChange={e => setEditingLoc({...editingLoc, mapCenter: {...editingLoc.mapCenter!, lat: parseFloat(e.target.value)}})} required />
-                                <input type="number" step="any" placeholder="Longitud" className="w-full border p-2 rounded" value={editingLoc.mapCenter?.lng} onChange={e => setEditingLoc({...editingLoc, mapCenter: {...editingLoc.mapCenter!, lng: parseFloat(e.target.value)}})} required />
+                                <input type="number" step="any" placeholder="Latitud (ej: -37.1)" className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" value={editingLoc.mapCenter?.lat} onChange={e => setEditingLoc({...editingLoc, mapCenter: {...editingLoc.mapCenter!, lat: parseFloat(e.target.value)}})} required />
+                                <input type="number" step="any" placeholder="Longitud (ej: -70.5)" className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" value={editingLoc.mapCenter?.lng} onChange={e => setEditingLoc({...editingLoc, mapCenter: {...editingLoc.mapCenter!, lng: parseFloat(e.target.value)}})} required />
                             </div>
                         </div>
 
                         <div className="flex justify-end gap-3 pt-4 border-t mt-4">
                             <button type="button" onClick={() => setIsLocModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                            <button type="submit" className="px-6 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700">Guardar Localidad</button>
+                            <button type="submit" className="px-6 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700 font-bold">Guardar Localidad</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
+
+        {/* --- MODAL CREAR USUARIO --- */}
+        {isUserModalOpen && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-md animate-fade-in">
+                    <div className="p-6 border-b flex justify-between items-center">
+                        <h3 className="text-xl font-bold text-gray-800">Crear Nuevo Usuario</h3>
+                        <button onClick={() => setIsUserModalOpen(false)} className="text-gray-400 hover:text-gray-600"><i className="fas fa-times"></i></button>
+                    </div>
+                    <form onSubmit={handleCreateUser} className="p-6 space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Nombre Completo</label>
+                            <input className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" 
+                                value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} required />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Email</label>
+                            <input type="email" className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" 
+                                value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} required />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Contraseña</label>
+                            <input type="password" className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" 
+                                value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} required />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Rol Inicial</label>
+                            <select className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" 
+                                value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
+                                <option value="USER">Usuario (Sin Admin)</option>
+                                <option value="ADMIN">Admin Localidad</option>
+                                <option value="SUPERADMIN">Super Admin</option>
+                            </select>
+                        </div>
+                        
+                        {newUser.role === 'ADMIN' && (
+                            <div className="animate-fade-in bg-blue-50 p-3 rounded border border-blue-100">
+                                <label className="block text-sm font-bold mb-1 text-blue-800">Asignar a Localidad</label>
+                                <select className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" required
+                                    value={newUser.locationId} onChange={e => setNewUser({...newUser, locationId: Number(e.target.value)})}>
+                                    <option value={0}>Selecciona una localidad...</option>
+                                    {locations.map(loc => (
+                                        <option key={loc.id} value={loc.id}>{loc.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3 pt-4 border-t mt-4">
+                            <button type="button" onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
+                            <button type="submit" className="px-6 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700 font-bold">Crear Usuario</button>
                         </div>
                     </form>
                 </div>

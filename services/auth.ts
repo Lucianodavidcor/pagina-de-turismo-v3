@@ -1,50 +1,92 @@
 import api from '../lib/axios';
 import { User } from '../types';
 
+// --- Interfaces internas del Backend ---
+interface BackendUser {
+  id: number;
+  email: string;
+  name: string;
+  role: 'USER' | 'ADMIN' | 'SUPERADMIN';
+  location_id?: number | null; // Así viene de la base de datos
+  created_at?: string;
+}
+
 interface AuthResponse {
   message: string;
   token: string;
-  user: User;
+  user: BackendUser; // El backend devuelve snake_case
 }
 
 interface CreateAdminData {
   name: string;
   email: string;
   password: string;
-  location_id: number;
+  role: string;
+  locationId: number;
 }
 
-// Login
-export const loginUser = async (email: string, password: string): Promise<AuthResponse> => {
+// --- ADAPTADOR (La clave para arreglar la tabla) ---
+const adaptUser = (raw: BackendUser): User => ({
+  id: raw.id,
+  email: raw.email,
+  name: raw.name,
+  role: raw.role,
+  // Transformamos location_id -> locationId
+  locationId: raw.location_id ? Number(raw.location_id) : undefined 
+});
+
+// --- FUNCIONES ---
+
+export const loginUser = async (email: string, password: string) => {
   const { data } = await api.post<AuthResponse>('/auth/login', { email, password });
-  return data;
+  return {
+    ...data,
+    user: adaptUser(data.user) // Adaptamos el usuario al hacer login
+  };
 };
 
-// Registro Público
-export const registerUser = async (name: string, email: string, password: string): Promise<AuthResponse> => {
+export const registerUser = async (name: string, email: string, password: string) => {
   const { data } = await api.post<AuthResponse>('/auth/register', { name, email, password });
-  return data;
+  return {
+    ...data,
+    user: adaptUser(data.user)
+  };
 };
 
 // --- GESTIÓN DE USUARIOS (SUPERADMIN) ---
 
 export const getAllUsers = async (): Promise<User[]> => {
-  const { data } = await api.get<User[]>('/auth/users');
-  return data;
+  const { data } = await api.get<BackendUser[]>('/auth/users');
+  // Pasamos cada usuario por el adaptador antes de entregarlo al componente
+  return data.map(adaptUser);
 };
 
 export const registerAdmin = async (adminData: CreateAdminData) => {
-  const { data } = await api.post('/auth/register-admin', adminData);
-  return data;
+  // Convertimos locationId -> locationId (o location_id si el endpoint lo requiere, 
+  // pero tu controlador createAdmin usa camelCase en el body: req.body.locationId)
+  const payload = {
+    name: adminData.name,
+    email: adminData.email,
+    password: adminData.password,
+    role: adminData.role,
+    locationId: adminData.locationId || null
+  };
+  
+  const { data } = await api.post('/auth/register-admin', payload);
+  return {
+    ...data,
+    user: adaptUser(data.user)
+  };
 };
 
-// Actualizar rol o localidad de un usuario
 export const updateUser = async (id: number, role: string, locationId: number | null) => {
   const { data } = await api.put(`/auth/users/${id}`, { role, locationId });
-  return data;
+  return {
+    ...data,
+    user: adaptUser(data.user)
+  };
 };
 
-// Eliminar usuario
 export const deleteUser = async (id: number) => {
   const { data } = await api.delete(`/auth/users/${id}`);
   return data;

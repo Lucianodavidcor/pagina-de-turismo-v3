@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useParams, useLocation as useRouterLocation } from 'react-router-dom'; // <--- Importamos useLocation del router
 import PageShell from '../components/PageShell';
 import Map, { MapHandle } from '../components/Map';
 import AttractionCard from '../components/AttractionCard';
 import ActivityCard from '../components/ActivityCard';
-import { useLocation } from '../hooks/useLocation';
+import { useLocation } from '../hooks/useLocation'; // Tu hook personalizado
 import type { Attraction } from '../types';
 
 interface LocationPageProps {
@@ -12,16 +12,36 @@ interface LocationPageProps {
 }
 
 const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
-  // 1. Determinar el slug activo (desde prop o URL)
+  // 1. Determinar el slug activo
   const params = useParams<{ location: string }>();
   const activeSlug = slugProp || params.location || '';
+  
+  // Obtenemos el hash de la URL (ej: #atracciones)
+  const { hash } = useRouterLocation(); 
 
   // 2. Usar el Hook conectado a la API
   const { data, loading, error } = useLocation(activeSlug);
   
-  // Estados locales para la interacción de UI
+  // Estados locales
   const [selected, setSelected] = useState<Attraction | null>(null);
   const mapRef = useRef<MapHandle | null>(null);
+
+  // --- EFECTO PARA SCROLL AUTOMÁTICO (FIX ANCLAJES) ---
+  useEffect(() => {
+    // Solo intentamos scrollear si ya cargaron los datos y hay un hash en la URL
+    if (!loading && data && hash) {
+      // Quitamos el '#' del string
+      const id = hash.replace('#', '');
+      const element = document.getElementById(id);
+      
+      if (element) {
+        // Pequeño timeout para asegurar que el DOM se pintó
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, [loading, data, hash]); // Se ejecuta cuando cambia cualquiera de estos
 
   // 3. Manejo de Carga
   if (loading) {
@@ -56,7 +76,8 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
     <PageShell data={data}>
       
       {/* SECCIÓN DE ATRACCIONES */}
-      <section id="atracciones" className="py-12 bg-gray-50 scroll-mt-16">
+      {/* scroll-mt-24 asegura que el header sticky no tape el título al scrollear */}
+      <section id="atracciones" className="py-12 bg-gray-50 scroll-mt-24">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">{attractions.title}</h2>
           
@@ -68,9 +89,10 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                 selected={selected?.title === item.title} 
                 onClick={(a) => { 
                   setSelected(a); 
-                  // Mueve el mapa y abre el popup si el mapa existe
                   if (mapRef.current && mapCenter) {
                     mapRef.current.openPopupAt?.(a.coordinates.lat, a.coordinates.lng);
+                    // Opcional: scrollear al mapa para ver el detalle
+                    document.getElementById('mapa-ubicacion')?.scrollIntoView({ behavior: 'smooth' });
                   }
                 }} 
                 accentColor={accentColor} 
@@ -127,7 +149,10 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                         accentColor === 'cyan' ? 'bg-cyan-500 hover:bg-cyan-600' :
                         'bg-green-600 hover:bg-green-700'
                       }`}
-                      onClick={() => mapRef.current?.flyTo?.(selected.coordinates.lat, selected.coordinates.lng)}
+                      onClick={() => {
+                          mapRef.current?.flyTo?.(selected.coordinates.lat, selected.coordinates.lng);
+                          document.getElementById('mapa-ubicacion')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
                     >
                       <i className="fas fa-map-marker-alt mr-2"></i> Ver en Mapa
                     </button>
@@ -139,9 +164,9 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
         </div>
       </section>
 
-      {/* SECCIÓN DE HOTELES (Solo si hay datos) */}
+      {/* SECCIÓN DE HOTELES */}
       {data.hotels && data.hotels.items.length > 0 && (
-        <section id="hoteles" className="py-12 bg-white scroll-mt-16">
+        <section id="hoteles" className="py-12 bg-white scroll-mt-24">
           <div className="container mx-auto px-6">
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">{data.hotels.title}</h2>
             <div className="grid md:grid-cols-3 gap-6">
@@ -150,7 +175,10 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                   key={h.id || i} 
                   attraction={h} 
                   accentColor={accentColor} 
-                  onClick={(a) => mapRef.current?.flyTo?.(a.coordinates.lat, a.coordinates.lng)} 
+                  onClick={(a) => {
+                      mapRef.current?.flyTo?.(a.coordinates.lat, a.coordinates.lng);
+                      document.getElementById('mapa-ubicacion')?.scrollIntoView({ behavior: 'smooth' });
+                  }} 
                 />
               ))}
             </div>
@@ -158,9 +186,9 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
         </section>
       )}
 
-      {/* SECCIÓN DE RESTAURANTES (Solo si hay datos) */}
+      {/* SECCIÓN DE RESTAURANTES */}
       {data.restaurants && data.restaurants.items.length > 0 && (
-        <section id="restaurantes" className="py-12 bg-gray-50 scroll-mt-16">
+        <section id="restaurantes" className="py-12 bg-gray-50 scroll-mt-24">
           <div className="container mx-auto px-6">
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">{data.restaurants.title}</h2>
             <div className="grid md:grid-cols-3 gap-6">
@@ -169,7 +197,10 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
                   key={r.id || i} 
                   attraction={r} 
                   accentColor={accentColor} 
-                  onClick={(a) => mapRef.current?.flyTo?.(a.coordinates.lat, a.coordinates.lng)} 
+                  onClick={(a) => {
+                      mapRef.current?.flyTo?.(a.coordinates.lat, a.coordinates.lng);
+                      document.getElementById('mapa-ubicacion')?.scrollIntoView({ behavior: 'smooth' });
+                  }} 
                 />
               ))}
             </div>
@@ -178,7 +209,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
       )}
 
       {/* SECCIÓN DE ACTIVIDADES */}
-      <section id="actividades" className="py-20 bg-white scroll-mt-16">
+      <section id="actividades" className="py-20 bg-white scroll-mt-24">
           <div className="container mx-auto px-6">
               <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">{activities.title}</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-center">
@@ -190,7 +221,7 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
       </section>
 
       {/* SECCIÓN DE GALERÍA */}
-      <section id="galeria" className="py-20 bg-gray-50 scroll-mt-16">
+      <section id="galeria" className="py-20 bg-gray-50 scroll-mt-24">
           <div className="container mx-auto px-6">
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">{gallery.title}</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -208,8 +239,8 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
           </div>
       </section>
 
-      {/* SECCIÓN DE MAPA */}
-      <section className="container mx-auto px-6 py-12 pb-20">
+      {/* SECCIÓN DE MAPA (con ID para referencia) */}
+      <section id="mapa-ubicacion" className="container mx-auto px-6 py-12 pb-20 scroll-mt-24">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Ubicación y Puntos de Interés</h2>
         <div className="bg-white rounded-lg shadow-lg overflow-hidden h-[500px] border border-gray-200 relative z-0">
           {/* PROTECCIÓN CONTRA UNDEFINED */}
@@ -224,7 +255,6 @@ const LocationPage: React.FC<LocationPageProps> = ({ slugProp }) => {
               ]} 
               onSelect={(a) => {
                 setSelected(a);
-                // Scroll suave hacia la sección de detalles/atracciones si está muy lejos
                 document.getElementById('atracciones')?.scrollIntoView({ behavior: 'smooth' });
               }} 
             />

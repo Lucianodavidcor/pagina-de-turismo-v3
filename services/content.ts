@@ -10,7 +10,6 @@ export const uploadImages = async (files: FileList | File[]): Promise<string[]> 
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 
-  // El backend devuelve { message, results: [...] }
   if (data.results && Array.isArray(data.results)) {
       return data.results.map((img: any) => img.url);
   }
@@ -22,24 +21,30 @@ export const uploadImages = async (files: FileList | File[]): Promise<string[]> 
 export const getAttractions = async (locationId: number) => {
   const { data } = await api.get(`/attractions?location=${locationId}`);
   
-  // AL LEER (GET): El backend sí devuelve objetos (ej: {id: 1, url: '...'})
-  // Los transformamos a string[] para que el frontend los entienda
+  // ADAPTADOR (GET): Backend (latitude/longitude) -> Frontend (coordinates { lat, lng })
   return data.map((a: any) => ({
     ...a,
     locationId: a.location_id,
-    images: a.images ? a.images.map((i: any) => i.url) : []
+    images: a.images ? a.images.map((i: any) => i.url) : [],
+    coordinates: {
+        lat: Number(a.latitude),
+        lng: Number(a.longitude)
+    }
   }));
 };
 
 export const saveAttraction = async (attraction: Partial<Attraction>) => {
-  // AL GUARDAR (POST/PUT): Enviamos solo strings, no objetos
+  // ADAPTADOR (SAVE): Frontend (coordinates) -> Backend (latitude/longitude)
   const payload = {
     ...attraction,
     location_id: attraction.locationId,
-    // CORRECCIÓN AQUÍ: Enviamos el array de strings directo
-    // Antes hacíamos .map(url => ({ url })), eso causaba el error en la DB
-    images: attraction.images || [] 
+    latitude: attraction.coordinates?.lat,
+    longitude: attraction.coordinates?.lng,
+    images: attraction.images || []
   };
+
+  // Eliminamos 'coordinates' del payload porque el backend no lo espera
+  delete (payload as any).coordinates;
 
   if (attraction.id) {
     return api.put(`/attractions/${attraction.id}`, payload);
@@ -52,7 +57,7 @@ export const deleteAttraction = async (id: number) => {
   return api.delete(`/attractions/${id}`);
 };
 
-// --- ACTIVIDADES ---
+// --- ACTIVIDADES (Sin cambios mayores) ---
 
 export const getActivities = async (locationId: number) => {
   const { data } = await api.get(`/activities?location=${locationId}`);
@@ -94,11 +99,7 @@ export const getDetailPageById = async (id: number) => {
 };
 
 export const saveDetailPage = async (page: Partial<DetailPageContent> & { locationId: number }) => {
-  const payload = {
-    ...page,
-    location_id: page.locationId
-  };
-
+  const payload = { ...page, location_id: page.locationId };
   if (page.id) {
     return api.put(`/detail-pages/${page.id}`, payload);
   } else {

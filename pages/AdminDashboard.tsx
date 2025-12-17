@@ -9,6 +9,7 @@ import AttractionsManager from '../components/admin/AttractionsManager';
 import ActivitiesManager from '../components/admin/ActivitiesManager';
 import DetailPagesManager from '../components/admin/DetailPagesManager';
 import GalleryManager from '../components/admin/GalleryManager';
+import ForumModeration from '../components/admin/ForumModeration';
 // Tipos
 import type { LocationData, User } from '../types';
 
@@ -187,6 +188,7 @@ const AdminDashboard: React.FC = () => {
           <MenuButton icon="hiking" label="Actividades" active={activeTab === 'actividades'} onClick={() => setActiveTab('actividades')} />
           <MenuButton icon="images" label="Galería" active={activeTab === 'galeria'} onClick={() => setActiveTab('galeria')} />
           <MenuButton icon="file-alt" label="Páginas Info" active={activeTab === 'detail-pages'} onClick={() => setActiveTab('detail-pages')} />
+          <MenuButton icon="comments" label="Moderación Foro" active={activeTab === 'forum'} onClick={() => setActiveTab('forum')} />
         </nav>
 
         <div className="p-4 border-t border-slate-800">
@@ -262,6 +264,10 @@ const AdminDashboard: React.FC = () => {
                 workingLocationId ? 
                 <GalleryManager locationId={workingLocationId} /> : 
                 <SelectLocationMsg />
+            )}
+
+            {activeTab === 'forum' && (
+                <ForumModeration locationId={isSuperAdmin ? workingLocationId : user.locationId} />
             )}
 
             {/* --- SECCIÓN DE ADMINISTRACIÓN GLOBAL --- */}

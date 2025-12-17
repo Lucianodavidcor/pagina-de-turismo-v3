@@ -4,10 +4,11 @@ import { useNavigate } from 'react-router-dom';
 // Servicios
 import { getAllLocations, createLocation, updateLocation, deleteLocation } from '../services/locations';
 import { getAllUsers, registerAdmin, updateUser, deleteUser } from '../services/auth';
-// Componentes de Gestión de Contenido (NUEVOS)
+// Componentes de Gestión de Contenido
 import AttractionsManager from '../components/admin/AttractionsManager';
 import ActivitiesManager from '../components/admin/ActivitiesManager';
 import DetailPagesManager from '../components/admin/DetailPagesManager';
+import GalleryManager from '../components/admin/GalleryManager';
 // Tipos
 import type { LocationData, User } from '../types';
 
@@ -16,7 +17,7 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('resumen');
   
-  // Estado para saber qué localidad estamos editando (Crucial para SuperAdmin)
+  // Estado para saber qué localidad estamos editando
   const [workingLocationId, setWorkingLocationId] = useState<number | null>(null);
 
   // Datos Globales
@@ -36,15 +37,14 @@ const AdminDashboard: React.FC = () => {
   const [tempUserRole, setTempUserRole] = useState<string>('');
   const [tempUserLoc, setTempUserLoc] = useState<number | string>('');
 
-  // 1. Cargar datos iniciales
   useEffect(() => {
     if (activeTab === 'localidades' || activeTab === 'usuarios' || activeTab === 'resumen') {
         loadData();
     }
   }, [activeTab]);
 
-  // 2. Configurar localidad de trabajo automáticamente para ADMINS normales
   useEffect(() => {
+    // Si es admin normal, fijamos su localidad al iniciar
     if (user && !isSuperAdmin && user.locationId) {
       setWorkingLocationId(user.locationId);
     }
@@ -185,6 +185,7 @@ const AdminDashboard: React.FC = () => {
           <div className="pt-4 pb-1 px-3 text-xs font-semibold text-gray-500 uppercase">Contenido</div>
           <MenuButton icon="umbrella-beach" label="Atracciones" active={activeTab === 'atracciones'} onClick={() => setActiveTab('atracciones')} />
           <MenuButton icon="hiking" label="Actividades" active={activeTab === 'actividades'} onClick={() => setActiveTab('actividades')} />
+          <MenuButton icon="images" label="Galería" active={activeTab === 'galeria'} onClick={() => setActiveTab('galeria')} />
           <MenuButton icon="file-alt" label="Páginas Info" active={activeTab === 'detail-pages'} onClick={() => setActiveTab('detail-pages')} />
         </nav>
 
@@ -203,7 +204,8 @@ const AdminDashboard: React.FC = () => {
                 <h2 className="text-xl font-semibold text-gray-800 capitalize">{activeTab.replace('-', ' ')}</h2>
                 
                 {/* SELECTOR DE LOCALIDAD (SOLO SUPERADMIN) */}
-                {isSuperAdmin && ['atracciones', 'actividades', 'detail-pages'].includes(activeTab) && (
+                {/* CORRECCIÓN: Agregamos 'galeria' a la lista para que aparezca el selector */}
+                {isSuperAdmin && ['atracciones', 'actividades', 'detail-pages', 'galeria'].includes(activeTab) && (
                     <div className="flex items-center gap-2 ml-4 bg-slate-100 px-3 py-1 rounded border border-slate-200">
                         <span className="text-xs font-bold text-gray-500 uppercase">Editando:</span>
                         <select 
@@ -256,7 +258,13 @@ const AdminDashboard: React.FC = () => {
                 <SelectLocationMsg />
             )}
 
-            {/* --- SECCIÓN DE ADMINISTRACIÓN GLOBAL (Tu código existente) --- */}
+            {activeTab === 'galeria' && (
+                workingLocationId ? 
+                <GalleryManager locationId={workingLocationId} /> : 
+                <SelectLocationMsg />
+            )}
+
+            {/* --- SECCIÓN DE ADMINISTRACIÓN GLOBAL --- */}
 
             {activeTab === 'usuarios' && isSuperAdmin && (
                 <div>

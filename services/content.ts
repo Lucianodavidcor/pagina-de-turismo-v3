@@ -20,8 +20,6 @@ export const uploadImages = async (files: FileList | File[]): Promise<string[]> 
 
 export const getAttractions = async (locationId: number) => {
   const { data } = await api.get(`/attractions?location=${locationId}`);
-  
-  // ADAPTADOR (GET): Backend (latitude/longitude) -> Frontend (coordinates { lat, lng })
   return data.map((a: any) => ({
     ...a,
     locationId: a.location_id,
@@ -34,7 +32,6 @@ export const getAttractions = async (locationId: number) => {
 };
 
 export const saveAttraction = async (attraction: Partial<Attraction>) => {
-  // ADAPTADOR (SAVE): Frontend (coordinates) -> Backend (latitude/longitude)
   const payload = {
     ...attraction,
     location_id: attraction.locationId,
@@ -42,8 +39,6 @@ export const saveAttraction = async (attraction: Partial<Attraction>) => {
     longitude: attraction.coordinates?.lng,
     images: attraction.images || []
   };
-
-  // Eliminamos 'coordinates' del payload porque el backend no lo espera
   delete (payload as any).coordinates;
 
   if (attraction.id) {
@@ -57,7 +52,7 @@ export const deleteAttraction = async (id: number) => {
   return api.delete(`/attractions/${id}`);
 };
 
-// --- ACTIVIDADES (Sin cambios mayores) ---
+// --- ACTIVIDADES ---
 
 export const getActivities = async (locationId: number) => {
   const { data } = await api.get(`/activities?location=${locationId}`);
@@ -109,4 +104,24 @@ export const saveDetailPage = async (page: Partial<DetailPageContent> & { locati
 
 export const deleteDetailPage = async (id: number) => {
   return api.delete(`/detail-pages/${id}`);
+};
+
+// --- GALERÍA (NUEVAS FUNCIONES CORREGIDAS) ---
+
+export const getGallery = async (locationId: number) => {
+  const { data } = await api.get(`/gallery/location/${locationId}`);
+  return data;
+};
+
+// CORRECCIÓN: Ahora recibe un array de strings y lo envía como 'images'
+export const saveGalleryImages = async (locationId: number, imageUrls: string[]) => {
+  const payload = {
+    location_id: locationId,
+    images: imageUrls // <--- Esto es lo que esperaba tu backend (Array)
+  };
+  return api.post('/gallery', payload);
+};
+
+export const deleteGalleryImage = async (id: number) => {
+  return api.delete(`/gallery/${id}`);
 };

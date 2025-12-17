@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { HOME_NAV_LINKS } from '../constants';
-// Imports de Servicios y Contexto
 import { getAllLocations, getGalleryByLocationId } from '../services/locations';
 import { getPublicPosts, createPost, ForumPost } from '../services/forum';
 import { uploadImages } from '../services/content';
@@ -13,16 +12,16 @@ import type { LocationData } from '../types';
 const HomePage: React.FC = () => {
   const { user } = useAuth();
   
-  // Estados de Datos
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [adventureImages, setAdventureImages] = useState<string[]>([]);
   const [forumPosts, setForumPosts] = useState<ForumPost[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Estados del Formulario (Home)
+  // Formulario
   const [newPost, setNewPost] = useState({ text: '', rating: 5, locationId: 0, images: [] as string[] });
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
+  const [hoverRating, setHoverRating] = useState(0); // Para efecto estrellas
 
   useEffect(() => {
     fetchHomeData();
@@ -31,34 +30,25 @@ const HomePage: React.FC = () => {
   const fetchHomeData = async () => {
     try {
       setLoading(true);
-      
-      // 1. Cargar Localidades y Posts del Foro en paralelo
       const [locs, posts] = await Promise.all([
         getAllLocations(),
         getPublicPosts()
       ]);
-      
       setLocations(locs);
-      // Tomamos solo las últimas 3 reseñas para el Home
-      setForumPosts(posts.slice(0, 3));
+      setForumPosts(posts.slice(0, 3)); // Solo las últimas 3
 
-      // 2. Cargar Galería Random (Aventuras)
       if (locs.length > 0) {
         const galleryPromises = locs.map(loc => getGalleryByLocationId(loc.id));
         const galleries = await Promise.all(galleryPromises);
-        const allImages = galleries.flat();
-        const shuffled = allImages.sort(() => 0.5 - Math.random());
+        const shuffled = galleries.flat().sort(() => 0.5 - Math.random());
         setAdventureImages(shuffled.slice(0, 8));
       }
-
     } catch (error) {
       console.error("Error cargando home:", error);
     } finally {
       setLoading(false);
     }
   };
-
-  // --- Lógica del Formulario ---
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
@@ -73,6 +63,10 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const removeImage = (index: number) => {
+      setNewPost(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -81,10 +75,6 @@ const HomePage: React.FC = () => {
     }
     if (newPost.locationId === 0) {
         setMsg({ type: 'error', text: 'Selecciona una localidad.' });
-        return;
-    }
-    if (!newPost.text.trim()) {
-        setMsg({ type: 'error', text: 'Escribe una reseña.' });
         return;
     }
 
@@ -96,25 +86,26 @@ const HomePage: React.FC = () => {
         images: newPost.images
       });
       setMsg({ type: 'success', text: '¡Enviado! Tu reseña está pendiente de revisión.' });
-      setNewPost({ text: '', rating: 5, locationId: 0, images: [] }); // Reset
+      setNewPost({ text: '', rating: 5, locationId: 0, images: [] });
+      setHoverRating(0);
     } catch (error) {
       setMsg({ type: 'error', text: 'Error al enviar la reseña.' });
     }
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-white font-sans">
       <Header navLinks={HOME_NAV_LINKS} isHome={true} />
 
       {/* Hero Section */}
       <section className="relative h-screen bg-cover bg-center text-white" style={{ backgroundImage: "url('https://vantravellers.com/wp-content/uploads/2017/06/Chilecito-Ruta-40-scaled.jpg')" }}>
         <div className="absolute inset-0 bg-black/50"></div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
-          <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-4">Descubre el Corazón de Neuquén: <br /> Turismo Norte</h1>
-          <p className="text-lg md:text-xl mb-8 max-w-3xl">Explora la belleza natural y la rica historia de nuestras localidades.</p>
+          <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-4 drop-shadow-lg">Descubre el Corazón de Neuquén: <br /> Turismo Norte</h1>
+          <p className="text-lg md:text-xl mb-8 max-w-3xl drop-shadow-md">Explora la belleza natural y la rica historia de nuestras localidades.</p>
           <div className="flex flex-wrap justify-center gap-4">
              {locations.slice(0, 2).map(loc => (
-                <Link key={loc.id} to={`/${loc.slug}`} className={`font-bold py-3 px-8 rounded-md transition-transform transform hover:scale-105 ${loc.accentColor === 'cyan' ? 'bg-cyan-500 hover:bg-cyan-600 text-white' : 'bg-white hover:bg-gray-200 text-gray-800'}`}>
+                <Link key={loc.id} to={`/${loc.slug}`} className={`font-bold py-3 px-8 rounded-full transition-transform transform hover:scale-105 shadow-lg ${loc.accentColor === 'cyan' ? 'bg-cyan-600 hover:bg-cyan-700 text-white' : 'bg-white hover:bg-gray-100 text-gray-900'}`}>
                   Explorar {loc.name}
                 </Link>
              ))}
@@ -126,20 +117,16 @@ const HomePage: React.FC = () => {
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Destinos Imperdibles</h2>
-          <div className="grid md:grid-cols-2 gap-8 w-full">
-              {loading ? <div className="col-span-2 text-center">Cargando destinos...</div> : locations.map((loc) => (
-                <div key={loc.id} className="relative rounded-lg overflow-hidden shadow-lg transform hover:-translate-y-2 transition-transform duration-300 h-96 group">
+          <div className="grid md:grid-cols-2 gap-8 w-full max-w-6xl mx-auto">
+              {loading ? <div className="col-span-2 text-center text-gray-500">Cargando destinos...</div> : locations.map((loc) => (
+                <div key={loc.id} className="relative rounded-2xl overflow-hidden shadow-xl transform hover:-translate-y-2 transition-transform duration-300 h-96 group cursor-pointer">
                   <img src={loc.hero.image} alt={loc.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-black/90 transition-colors"></div>
                   <div className="absolute inset-0 p-8 flex flex-col justify-end text-white">
-                    <h3 className="text-3xl font-bold mb-2">{loc.name}</h3>
-                    <p className="mb-4">{loc.hero.subtitle || 'Naturaleza pura'}</p>
-                    <Link to={`/${loc.slug}`} className={`text-white font-semibold py-2 px-4 rounded-md self-start transition-colors ${
-                      loc.accentColor === 'orange' ? 'bg-orange-500 hover:bg-orange-600' :
-                      loc.accentColor === 'cyan' ? 'bg-cyan-500 hover:bg-cyan-600' :
-                      'bg-green-600 hover:bg-green-700'
-                    }`}>
-                      Explorar {loc.name}
+                    <h3 className="text-4xl font-bold mb-2">{loc.name}</h3>
+                    <p className="mb-6 text-gray-200">{loc.hero.subtitle || 'Naturaleza pura'}</p>
+                    <Link to={`/${loc.slug}`} className="bg-white/20 backdrop-blur-md border border-white/50 text-white font-semibold py-2 px-6 rounded-full self-start hover:bg-white hover:text-gray-900 transition-all">
+                      Conocer más
                     </Link>
                   </div>
                 </div>
@@ -155,83 +142,109 @@ const HomePage: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {adventureImages.length > 0 ? (
               adventureImages.map((img, i) => (
-                <div key={i} className="overflow-hidden rounded-lg shadow-md aspect-square group">
-                  <img src={img} alt={`Aventura ${i + 1}`} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-300" />
+                <div key={i} className="overflow-hidden rounded-xl shadow-md aspect-square group relative">
+                  <img src={img} alt={`Aventura ${i + 1}`} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
                 </div>
               ))
             ) : (
-               [...Array(4)].map((_, i) => <div key={i} className="bg-gray-200 animate-pulse rounded-lg aspect-square"></div>)
+               [...Array(4)].map((_, i) => <div key={i} className="bg-gray-200 animate-pulse rounded-xl aspect-square"></div>)
             )}
           </div>
         </div>
       </section>
 
-      {/* FORO DE VIAJEROS (DINÁMICO) */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-6 max-w-4xl">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Foro de Viajeros</h2>
+      {/* FORO DE VIAJEROS */}
+      <section className="py-24 bg-slate-50 relative overflow-hidden">
+        {/* Decoración fondo */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute -bottom-8 left-0 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+
+        <div className="container mx-auto px-6 max-w-5xl relative z-10">
+          <h2 className="text-4xl font-bold text-center text-gray-800 mb-4">La Voz de los Viajeros</h2>
+          <p className="text-center text-gray-500 mb-12 max-w-2xl mx-auto">Únete a nuestra comunidad y comparte tus mejores momentos en el norte neuquino.</p>
           
-          {/* Formulario de Publicación */}
-          <div className="bg-white p-8 rounded-lg shadow-lg mb-12 relative overflow-hidden">
+          {/* Formulario Estilizado */}
+          <div className="bg-white p-8 rounded-2xl shadow-xl mb-16 border border-gray-100">
             {msg.text && (
-                <div className={`absolute top-0 left-0 right-0 p-2 text-center text-sm font-bold ${msg.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                <div className={`p-3 mb-6 rounded text-center text-sm font-bold ${msg.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     {msg.text}
                 </div>
             )}
             
-            <h3 className="text-xl font-semibold mb-4 text-gray-700 mt-2">Compartí tu experiencia</h3>
+            <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-600">
+                    <i className="fas fa-comment-alt"></i>
+                </div>
+                <h3 className="text-xl font-bold text-gray-800">Deja tu reseña</h3>
+            </div>
             
             {!user ? (
-                <div className="text-center py-6 bg-gray-50 rounded border border-dashed border-gray-300">
-                    <p className="text-gray-500 mb-2">Inicia sesión para compartir tu historia.</p>
-                    <Link to="/login" className="text-cyan-600 font-bold hover:underline">Ir al Login</Link>
+                <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                    <p className="text-gray-500 mb-4">¿Ya visitaste alguno de nuestros destinos?</p>
+                    <Link to="/login" className="inline-block bg-cyan-600 text-white font-bold py-2 px-6 rounded-full hover:bg-cyan-700 transition shadow">
+                        Inicia Sesión para comentar
+                    </Link>
                 </div>
             ) : (
-                <form onSubmit={handleSubmit}>
-                    <div className="flex gap-4 mb-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
                         {/* Selector Localidad */}
-                        <select 
-                            className="flex-1 border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none bg-gray-50"
-                            value={newPost.locationId}
-                            onChange={(e) => setNewPost({...newPost, locationId: Number(e.target.value)})}
-                            required
-                        >
-                            <option value={0}>Selecciona Localidad...</option>
-                            {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                        </select>
+                        <div className="relative">
+                            <select 
+                                className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 outline-none appearance-none"
+                                value={newPost.locationId}
+                                onChange={(e) => setNewPost({...newPost, locationId: Number(e.target.value)})}
+                                required
+                            >
+                                <option value={0}>Selecciona el destino...</option>
+                                {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                            </select>
+                            <div className="absolute right-3 top-3.5 text-gray-400 pointer-events-none"><i className="fas fa-chevron-down"></i></div>
+                        </div>
 
-                        {/* Selector Estrellas */}
-                        <div className="flex items-center gap-1 bg-gray-50 px-3 rounded border">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <button key={star} type="button" onClick={() => setNewPost({...newPost, rating: star})} className={`text-xl ${star <= newPost.rating ? 'text-yellow-400' : 'text-gray-300'}`}>★</button>
-                            ))}
+                        {/* Estrellas */}
+                        <div className="flex items-center justify-between bg-gray-50 px-4 py-2 rounded-xl border border-gray-200">
+                            <span className="text-sm text-gray-500 font-medium">Calificación:</span>
+                            <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <button 
+                                        key={star} type="button" 
+                                        onMouseEnter={() => setHoverRating(star)}
+                                        onMouseLeave={() => setHoverRating(0)}
+                                        onClick={() => setNewPost({...newPost, rating: star})} 
+                                        className={`text-2xl transition-transform hover:scale-110 ${star <= (hoverRating || newPost.rating) ? 'text-yellow-400' : 'text-gray-200'}`}
+                                    >★</button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
                     <textarea 
-                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 mb-4" 
-                        rows={4} 
-                        placeholder="Escribe tu reseña aquí..."
+                        className="w-full p-4 border border-gray-200 bg-gray-50 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:bg-white outline-none transition h-32 resize-none" 
+                        placeholder="Cuéntanos tu experiencia..."
                         value={newPost.text}
                         onChange={(e) => setNewPost({...newPost, text: e.target.value})}
                         required
                     ></textarea>
 
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <label className="text-gray-600 hover:text-cyan-600 font-medium cursor-pointer flex items-center gap-2">
-                                {uploading ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-paperclip"></i>}
-                                <span>{newPost.images.length > 0 ? `${newPost.images.length} fotos` : 'Subir Fotos'}</span>
-                                <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
-                            </label>
-                            {newPost.images.length > 0 && (
-                                <div className="flex gap-1">
-                                    {newPost.images.map((url, i) => <img key={i} src={url} className="w-8 h-8 rounded object-cover border" />)}
-                                </div>
-                            )}
+                    <div className="flex justify-between items-end pt-2">
+                        <div className="space-y-2">
+                            <div className="flex gap-2">
+                                {newPost.images.map((url, i) => (
+                                    <div key={i} className="relative w-12 h-12">
+                                        <img src={url} className="w-full h-full object-cover rounded-lg border" />
+                                        <button type="button" onClick={() => removeImage(i)} className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-xs">×</button>
+                                    </div>
+                                ))}
+                                <label className="w-12 h-12 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-cyan-500 hover:bg-cyan-50 transition text-gray-400 hover:text-cyan-600">
+                                    {uploading ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-camera"></i>}
+                                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+                                </label>
+                            </div>
                         </div>
-                        <button type="submit" className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded-md transition-colors shadow">
-                            Publicar
+                        <button type="submit" className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:shadow-cyan-500/30 transition transform active:scale-95">
+                            Publicar Reseña
                         </button>
                     </div>
                 </form>
@@ -239,49 +252,49 @@ const HomePage: React.FC = () => {
           </div>
 
           {/* Lista de Reseñas */}
-          <div className="space-y-8">
-            {forumPosts.length === 0 ? (
-                <p className="text-center text-gray-500">No hay reseñas recientes. ¡Sé el primero en opinar!</p>
-            ) : (
-                forumPosts.map((post) => (
-                <div key={post.id} className="bg-white p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-6">
-                    <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold text-xl mb-2">
-                            {post.avatar_url ? <img src={post.avatar_url} className="w-full h-full rounded-full object-cover"/> : post.author.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-xs text-gray-500">{new Date(post.created_at).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex-1">
-                        <div className="flex justify-between items-start mb-2">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <p className="font-bold text-gray-800">{post.author}</p>
-                                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">{post.location_name}</span>
-                                </div>
-                                <div className="text-yellow-400 text-sm">
-                                    {[...Array(5)].map((_, i) => (
-                                        <i key={i} className={`fas fa-star ${i < post.rating ? '' : 'text-gray-300'}`}></i>
-                                    ))}
-                                </div>
+          <div className="grid gap-6">
+            {forumPosts.map((post) => (
+                <div key={post.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition flex gap-4">
+                    <div className="flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 p-0.5">
+                            <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden">
+                                {post.avatar_url ? <img src={post.avatar_url} className="w-full h-full object-cover"/> : <span className="font-bold text-gray-500">{post.author.charAt(0)}</span>}
                             </div>
                         </div>
-                        <p className="text-gray-600 leading-relaxed mb-4">{post.text}</p>
-                        {post.images && post.images.length > 0 && (
-                            <div className="flex flex-wrap gap-4">
+                    </div>
+                    <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h4 className="font-bold text-gray-900">{post.author}</h4>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                                    <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                                    <span>•</span>
+                                    <span className="text-cyan-600 font-semibold">{post.location_name}</span>
+                                </div>
+                            </div>
+                            <div className="flex text-yellow-400 text-sm">
+                                {[...Array(5)].map((_, i) => <i key={i} className={`fas fa-star ${i < post.rating ? '' : 'text-gray-200'}`}></i>)}
+                            </div>
+                        </div>
+                        <p className="text-gray-600 text-sm leading-relaxed mb-3">"{post.text}"</p>
+                        {post.images?.length > 0 && (
+                            <div className="flex gap-2">
                                 {post.images.map((img, i) => (
-                                <img key={i} src={img} alt="Post" className="w-32 h-20 object-cover rounded-md cursor-pointer hover:opacity-90" />
+                                    <img key={i} src={img} className="w-16 h-12 object-cover rounded-lg border border-gray-100" />
                                 ))}
                             </div>
                         )}
                     </div>
                 </div>
-                ))
-            )}
-            
-            <div className="text-center mt-8">
-                <Link to="/forum" className="text-cyan-600 font-semibold hover:underline">Ver todas las reseñas &rarr;</Link>
-            </div>
+            ))}
           </div>
+          
+          <div className="text-center mt-12">
+            <Link to="/forum" className="inline-flex items-center gap-2 text-cyan-700 font-bold hover:text-cyan-900 transition">
+                Ver todas las experiencias <i className="fas fa-arrow-right"></i>
+            </Link>
+          </div>
+
         </div>
       </section>
       

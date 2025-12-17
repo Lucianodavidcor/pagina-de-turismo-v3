@@ -290,7 +290,7 @@ const HomePage: React.FC = () => {
           </div>
           
           <div className="text-center mt-12">
-            <Link to="/forum" className="inline-flex items-center gap-2 text-cyan-700 font-bold hover:text-cyan-900 transition">
+            <Link to="/foro" className="inline-flex items-center gap-2 text-cyan-700 font-bold hover:text-cyan-900 transition">
                 Ver todas las experiencias <i className="fas fa-arrow-right"></i>
             </Link>
           </div>

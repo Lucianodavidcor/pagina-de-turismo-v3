@@ -4,6 +4,10 @@ import { useNavigate } from 'react-router-dom';
 // Servicios
 import { getAllLocations, createLocation, updateLocation, deleteLocation } from '../services/locations';
 import { getAllUsers, registerAdmin, updateUser, deleteUser } from '../services/auth';
+// Componentes de Gestión de Contenido (NUEVOS)
+import AttractionsManager from '../components/admin/AttractionsManager';
+import ActivitiesManager from '../components/admin/ActivitiesManager';
+import DetailPagesManager from '../components/admin/DetailPagesManager';
 // Tipos
 import type { LocationData, User } from '../types';
 
@@ -12,6 +16,9 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('resumen');
   
+  // Estado para saber qué localidad estamos editando (Crucial para SuperAdmin)
+  const [workingLocationId, setWorkingLocationId] = useState<number | null>(null);
+
   // Datos Globales
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -23,20 +30,25 @@ const AdminDashboard: React.FC = () => {
   const [isLocModalOpen, setIsLocModalOpen] = useState(false);
 
   // --- ESTADOS PARA USUARIOS ---
-  // Para crear nuevo usuario
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'ADMIN', locationId: 0 });
-  
-  // Para editar usuario existente (inline en tabla)
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [tempUserRole, setTempUserRole] = useState<string>('');
   const [tempUserLoc, setTempUserLoc] = useState<number | string>('');
 
+  // 1. Cargar datos iniciales
   useEffect(() => {
     if (activeTab === 'localidades' || activeTab === 'usuarios' || activeTab === 'resumen') {
         loadData();
     }
   }, [activeTab]);
+
+  // 2. Configurar localidad de trabajo automáticamente para ADMINS normales
+  useEffect(() => {
+    if (user && !isSuperAdmin && user.locationId) {
+      setWorkingLocationId(user.locationId);
+    }
+  }, [user, isSuperAdmin]);
 
   const loadData = async () => {
     setLoading(true);
@@ -54,21 +66,20 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // --- HANDLERS USUARIOS (CREAR) ---
+  // --- HANDLERS USUARIOS ---
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
         await registerAdmin(newUser);
         setMsg({ type: 'success', text: '¡Usuario creado exitosamente!' });
         setIsUserModalOpen(false);
-        setNewUser({ name: '', email: '', password: '', role: 'ADMIN', locationId: 0 }); // Reset
+        setNewUser({ name: '', email: '', password: '', role: 'ADMIN', locationId: 0 }); 
         loadData();
     } catch (error: any) {
         setMsg({ type: 'error', text: error.response?.data?.message || 'Error al crear usuario' });
     }
   };
 
-  // --- HANDLERS USUARIOS (EDITAR/BORRAR) ---
   const startEditUser = (u: User) => {
     setEditingUserId(u.id);
     setTempUserRole(u.role);
@@ -173,6 +184,8 @@ const AdminDashboard: React.FC = () => {
 
           <div className="pt-4 pb-1 px-3 text-xs font-semibold text-gray-500 uppercase">Contenido</div>
           <MenuButton icon="umbrella-beach" label="Atracciones" active={activeTab === 'atracciones'} onClick={() => setActiveTab('atracciones')} />
+          <MenuButton icon="hiking" label="Actividades" active={activeTab === 'actividades'} onClick={() => setActiveTab('actividades')} />
+          <MenuButton icon="file-alt" label="Páginas Info" active={activeTab === 'detail-pages'} onClick={() => setActiveTab('detail-pages')} />
         </nav>
 
         <div className="p-4 border-t border-slate-800">
@@ -186,7 +199,27 @@ const AdminDashboard: React.FC = () => {
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header */}
         <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10">
-            <h2 className="text-xl font-semibold text-gray-800 capitalize">{activeTab}</h2>
+            <div className="flex items-center gap-4">
+                <h2 className="text-xl font-semibold text-gray-800 capitalize">{activeTab.replace('-', ' ')}</h2>
+                
+                {/* SELECTOR DE LOCALIDAD (SOLO SUPERADMIN) */}
+                {isSuperAdmin && ['atracciones', 'actividades', 'detail-pages'].includes(activeTab) && (
+                    <div className="flex items-center gap-2 ml-4 bg-slate-100 px-3 py-1 rounded border border-slate-200">
+                        <span className="text-xs font-bold text-gray-500 uppercase">Editando:</span>
+                        <select 
+                            className="bg-transparent text-sm font-semibold text-slate-800 outline-none cursor-pointer"
+                            value={workingLocationId || ''}
+                            onChange={(e) => setWorkingLocationId(Number(e.target.value))}
+                        >
+                            <option value="">-- Seleccionar Localidad --</option>
+                            {locations.map(l => (
+                                <option key={l.id} value={l.id}>{l.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+            </div>
+
             <div className="flex items-center gap-4">
                 {msg.text && (
                     <span className={`text-sm px-3 py-1 rounded animate-fade-in ${msg.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -203,7 +236,28 @@ const AdminDashboard: React.FC = () => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
             
-            {/* --- TAB: USUARIOS --- */}
+            {/* --- SECCIÓN DE GESTIÓN DE CONTENIDO --- */}
+            
+            {activeTab === 'atracciones' && (
+                workingLocationId ? 
+                <AttractionsManager locationId={workingLocationId} /> : 
+                <SelectLocationMsg />
+            )}
+
+            {activeTab === 'actividades' && (
+                workingLocationId ? 
+                <ActivitiesManager locationId={workingLocationId} /> : 
+                <SelectLocationMsg />
+            )}
+
+            {activeTab === 'detail-pages' && (
+                workingLocationId ? 
+                <DetailPagesManager locationId={workingLocationId} /> : 
+                <SelectLocationMsg />
+            )}
+
+            {/* --- SECCIÓN DE ADMINISTRACIÓN GLOBAL (Tu código existente) --- */}
+
             {activeTab === 'usuarios' && isSuperAdmin && (
                 <div>
                      <div className="flex justify-between items-center mb-6">
@@ -241,7 +295,7 @@ const AdminDashboard: React.FC = () => {
                                                             value={tempUserRole}
                                                             onChange={(e) => setTempUserRole(e.target.value)}
                                                         >
-                                                            <option value="USER">Usuario (Sin permisos)</option>
+                                                            <option value="USER">Usuario</option>
                                                             <option value="ADMIN">Admin Localidad</option>
                                                             <option value="SUPERADMIN">Super Admin</option>
                                                         </select>
@@ -280,7 +334,6 @@ const AdminDashboard: React.FC = () => {
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        {/* AQUÍ ESTABA EL BUG: Ahora u.locationId ya existe gracias al adaptador */}
                                                         {u.role === 'ADMIN' ? (
                                                              u.locationId 
                                                                 ? <span className="text-cyan-700 font-medium">{locations.find(l => l.id === u.locationId)?.name || `ID: ${u.locationId}`}</span>
@@ -310,7 +363,6 @@ const AdminDashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* --- TAB: LOCALIDADES --- */}
             {activeTab === 'localidades' && isSuperAdmin && (
                 <div>
                     <div className="flex justify-between items-center mb-6">
@@ -351,7 +403,6 @@ const AdminDashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* --- TAB: RESUMEN (DEFAULT) --- */}
             {activeTab === 'resumen' && (
                 <div className="bg-white p-10 rounded shadow-sm border border-gray-100 text-center">
                     <h2 className="text-2xl font-bold mb-4 text-gray-800">Panel de Control</h2>
@@ -497,6 +548,14 @@ const AdminDashboard: React.FC = () => {
     </div>
   );
 };
+
+const SelectLocationMsg = () => (
+    <div className="h-full flex flex-col items-center justify-center text-gray-400 p-10 border-2 border-dashed border-gray-200 rounded-lg">
+        <i className="fas fa-arrow-up text-4xl mb-4 animate-bounce text-cyan-200"></i>
+        <p className="text-xl font-medium text-gray-500">Selecciona una localidad</p>
+        <p className="text-sm">Usa el selector superior para elegir qué contenido editar.</p>
+    </div>
+);
 
 const MenuButton = ({ icon, label, active, onClick }: any) => (
     <button onClick={onClick} className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${

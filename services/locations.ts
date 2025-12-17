@@ -156,3 +156,28 @@ export const getLocationBySlug = async (slug: string): Promise<LocationPageData>
     throw error;
   }
 };
+
+// --- NUEVAS FUNCIONES PARA EL HOME ---
+
+// 1. Obtener todas las localidades (para las tarjetas del Home)
+export const getAllLocations = async (): Promise<LocationData[]> => {
+  try {
+    const { data } = await api.get<BackendLocation[]>('/locations');
+    // Reutilizamos el adaptador que ya creamos
+    return data.map(adaptLocation);
+  } catch (error) {
+    console.error('Error fetching all locations:', error);
+    return [];
+  }
+};
+
+// 2. Obtener galería por ID (para el grid de aventuras)
+export const getGalleryByLocationId = async (id: number): Promise<string[]> => {
+  try {
+    const { data } = await api.get<BackendGalleryImage[]>(`/gallery/location/${id}`);
+    return data.map(img => img.image_url);
+  } catch (error) {
+    console.error(`Error fetching gallery for location ${id}:`, error);
+    return [];
+  }
+};

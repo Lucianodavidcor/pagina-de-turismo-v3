@@ -1,4 +1,7 @@
+// context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+// 1. Importamos el hook
+import { useNavigate } from 'react-router-dom'; 
 import { User } from '../types';
 
 interface AuthContextType {
@@ -19,8 +22,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 2. Instanciamos la navegación (¡Ahora sí funcionará!)
+  const navigate = useNavigate();
+
   useEffect(() => {
-    // Al iniciar, verificamos si hay sesión guardada en el navegador
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
@@ -43,7 +48,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
-    window.location.href = '/login'; // Redirigir al login al salir
+    
+    // 3. CAMBIO CLAVE: Navegación interna en lugar de recarga total
+    navigate('/login'); 
   };
 
   const value = {
@@ -53,7 +60,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     logout,
     isAuthenticated: !!user,
-    // Helper para saber si es algún tipo de admin
     isAdmin: user?.role === 'ADMIN' || user?.role === 'SUPERADMIN',
     isSuperAdmin: user?.role === 'SUPERADMIN',
   };

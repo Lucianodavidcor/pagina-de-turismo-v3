@@ -1,5 +1,6 @@
+// App.tsx
 import React from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom'; // YA NO importamos HashRouter
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -7,38 +8,38 @@ import PrivateRoute from './components/PrivateRoute';
 import HomePage from './pages/HomePage';
 import LocationPage from './pages/LocationPage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage'; // <--- Nueva
+import RegisterPage from './pages/RegisterPage';
 import AdminDashboard from './pages/AdminDashboard';
-import UserDashboard from './pages/UserDashboard'; // <--- Nueva
+import UserDashboard from './pages/UserDashboard';
 import ActivitiesPage from './pages/ActivitiesPage';
 import ForumPage from './pages/ForumPage';
 
 const App: React.FC = () => {
   return (
+    // AuthProvider ahora es hijo del Router (que está en index.tsx), 
+    // por lo tanto puede usar la navegación.
     <AuthProvider>
-        <HashRouter>
-            <Routes>
-                {/* Rutas Públicas */}
-                <Route path="/" element={<HomePage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/actividades" element={<ActivitiesPage />} />
-                <Route path="/foro" element={<ForumPage />} />
+        <Routes>
+            {/* Rutas Públicas */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/actividades" element={<ActivitiesPage />} />
+            <Route path="/foro" element={<ForumPage />} />
 
-                {/* Rutas de Usuario Logueado (Cualquiera) */}
-                <Route element={<PrivateRoute />}> {/* PrivateRoute sin roles deja pasar a cualquier usuario logueado */}
-                    <Route path="/perfil" element={<UserDashboard />} />
-                </Route>
+            {/* Rutas de Usuario Logueado */}
+            <Route element={<PrivateRoute />}>
+                <Route path="/perfil" element={<UserDashboard />} />
+            </Route>
 
-                {/* Rutas de Admin */}
-                <Route element={<PrivateRoute roles={['ADMIN', 'SUPERADMIN']} />}>
-                    <Route path="/admin" element={<AdminDashboard />} />
-                </Route>
+            {/* Rutas de Admin */}
+            <Route element={<PrivateRoute roles={['ADMIN', 'SUPERADMIN']} />}>
+                <Route path="/admin" element={<AdminDashboard />} />
+            </Route>
 
-                {/* Ruta Dinámica (Catch-all) */}
-                <Route path="/:location" element={<LocationPage />} />
-            </Routes>
-        </HashRouter>
+            {/* Ruta Dinámica */}
+            <Route path="/:location" element={<LocationPage />} />
+        </Routes>
     </AuthProvider>
   );
 };

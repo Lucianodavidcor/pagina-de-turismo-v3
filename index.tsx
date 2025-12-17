@@ -1,7 +1,10 @@
-
+// index.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+// 1. Importamos BrowserRouter
+import { BrowserRouter } from 'react-router-dom'; 
 import App from './App';
+// import './index.css'; // Descomenta si usas estilos globales aquí
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -11,6 +14,9 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    {/* 2. Envolvemos TODA la App con BrowserRouter aquí */}
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );

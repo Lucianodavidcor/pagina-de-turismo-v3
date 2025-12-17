@@ -9,15 +9,21 @@ export const uploadImages = async (files: FileList | File[]): Promise<string[]> 
   const { data } = await api.post('/upload/multiple', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
-  // El backend devuelve objetos { url, public_id }, devolvemos solo las URLs
-  return data.map((img: any) => img.url);
+
+  // El backend devuelve { message, results: [...] }
+  if (data.results && Array.isArray(data.results)) {
+      return data.results.map((img: any) => img.url);
+  }
+  return [];
 };
 
-// --- ATRACCIONES (Hoteles, Restaurantes, Paseos) ---
+// --- ATRACCIONES ---
 
 export const getAttractions = async (locationId: number) => {
   const { data } = await api.get(`/attractions?location=${locationId}`);
-  // Adaptamos las imágenes que vienen como objetos al formato string[] que usa el front
+  
+  // AL LEER (GET): El backend sí devuelve objetos (ej: {id: 1, url: '...'})
+  // Los transformamos a string[] para que el frontend los entienda
   return data.map((a: any) => ({
     ...a,
     locationId: a.location_id,
@@ -26,12 +32,13 @@ export const getAttractions = async (locationId: number) => {
 };
 
 export const saveAttraction = async (attraction: Partial<Attraction>) => {
-  // Convertimos al formato del backend (images como objetos)
+  // AL GUARDAR (POST/PUT): Enviamos solo strings, no objetos
   const payload = {
     ...attraction,
     location_id: attraction.locationId,
-    // El backend espera array de objetos { url: string }
-    images: attraction.images?.map(url => ({ url })) || []
+    // CORRECCIÓN AQUÍ: Enviamos el array de strings directo
+    // Antes hacíamos .map(url => ({ url })), eso causaba el error en la DB
+    images: attraction.images || [] 
   };
 
   if (attraction.id) {
@@ -74,11 +81,11 @@ export const deleteActivity = async (id: number) => {
   return api.delete(`/activities/${id}`);
 };
 
-// --- DETAIL PAGES (Historia, Guías, etc.) ---
+// --- DETAIL PAGES ---
 
 export const getDetailPages = async (locationId: number) => {
   const { data } = await api.get(`/detail-pages/location/${locationId}`);
-  return data; // Devuelve lista ligera {id, slug, title}
+  return data;
 };
 
 export const getDetailPageById = async (id: number) => {

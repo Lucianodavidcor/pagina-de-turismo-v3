@@ -10,7 +10,8 @@ import ActivitiesManager from '../components/admin/ActivitiesManager';
 import DetailPagesManager from '../components/admin/DetailPagesManager';
 import GalleryManager from '../components/admin/GalleryManager';
 import ForumModeration from '../components/admin/ForumModeration';
-// Tipos
+import EditInfoLocalidad from '../components/admin/EditInfoLocalidad'; // <--- NUEVO IMPORT
+
 import type { LocationData, User } from '../types';
 
 const AdminDashboard: React.FC = () => {
@@ -18,7 +19,7 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('resumen');
   
-  // Estado para saber qué localidad estamos editando
+  // Estado para saber qué localidad estamos editando (Contenido)
   const [workingLocationId, setWorkingLocationId] = useState<number | null>(null);
 
   // Datos Globales
@@ -27,7 +28,7 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
 
-  // --- ESTADOS PARA LOCALIDADES ---
+  // --- ESTADOS PARA LOCALIDADES (Solo SuperAdmin) ---
   const [editingLoc, setEditingLoc] = useState<Partial<LocationData> | null>(null);
   const [isLocModalOpen, setIsLocModalOpen] = useState(false);
 
@@ -39,13 +40,16 @@ const AdminDashboard: React.FC = () => {
   const [tempUserLoc, setTempUserLoc] = useState<number | string>('');
 
   useEffect(() => {
-    if (activeTab === 'localidades' || activeTab === 'usuarios' || activeTab === 'resumen') {
+    // Si NO es SuperAdmin, no necesitamos cargar todas las localidades aquí, 
+    // porque 'EditInfoLocalidad' se encarga de cargar la suya.
+    // Solo cargamos si necesitamos listarlas para SuperAdmin o selectores.
+    if (isSuperAdmin || activeTab === 'resumen') {
         loadData();
     }
-  }, [activeTab]);
+  }, [activeTab, isSuperAdmin]);
 
   useEffect(() => {
-    // Si es admin normal, fijamos su localidad al iniciar
+    // Si es admin normal, fijamos su localidad al iniciar para las otras pestañas de contenido
     if (user && !isSuperAdmin && user.locationId) {
       setWorkingLocationId(user.locationId);
     }
@@ -67,7 +71,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // --- HANDLERS USUARIOS ---
+  // --- HANDLERS USUARIOS (SUPERADMIN) ---
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -114,7 +118,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // --- HANDLERS LOCALIDADES ---
+  // --- HANDLERS LOCALIDADES (SUPERADMIN) ---
   const openLocModal = (loc?: LocationData) => {
     if (loc) {
         setEditingLoc(JSON.parse(JSON.stringify(loc))); 
@@ -175,12 +179,21 @@ const AdminDashboard: React.FC = () => {
         <nav className="flex-1 py-6 px-3 space-y-1">
           <MenuButton icon="home" label="Resumen" active={activeTab === 'resumen'} onClick={() => setActiveTab('resumen')} />
           
+          {/* MENU PARA SUPERADMIN */}
           {isSuperAdmin && (
             <>
               <div className="pt-4 pb-1 px-3 text-xs font-semibold text-gray-500 uppercase">Administración Global</div>
               <MenuButton icon="map-marked-alt" label="Localidades" active={activeTab === 'localidades'} onClick={() => setActiveTab('localidades')} />
               <MenuButton icon="users-cog" label="Usuarios y Roles" active={activeTab === 'usuarios'} onClick={() => setActiveTab('usuarios')} />
             </>
+          )}
+
+          {/* MENU PARA ADMIN LOCAL */}
+          {!isSuperAdmin && (
+              <>
+                 <div className="pt-4 pb-1 px-3 text-xs font-semibold text-gray-500 uppercase">Configuración</div>
+                 <MenuButton icon="info-circle" label="Mi Localidad" active={activeTab === 'mi-localidad'} onClick={() => setActiveTab('mi-localidad')} />
+              </>
           )}
 
           <div className="pt-4 pb-1 px-3 text-xs font-semibold text-gray-500 uppercase">Contenido</div>
@@ -206,7 +219,6 @@ const AdminDashboard: React.FC = () => {
                 <h2 className="text-xl font-semibold text-gray-800 capitalize">{activeTab.replace('-', ' ')}</h2>
                 
                 {/* SELECTOR DE LOCALIDAD (SOLO SUPERADMIN) */}
-                {/* CORRECCIÓN: Agregamos 'galeria' a la lista para que aparezca el selector */}
                 {isSuperAdmin && ['atracciones', 'actividades', 'detail-pages', 'galeria'].includes(activeTab) && (
                     <div className="flex items-center gap-2 ml-4 bg-slate-100 px-3 py-1 rounded border border-slate-200">
                         <span className="text-xs font-bold text-gray-500 uppercase">Editando:</span>
@@ -270,7 +282,13 @@ const AdminDashboard: React.FC = () => {
                 <ForumModeration locationId={isSuperAdmin ? workingLocationId : user.locationId} />
             )}
 
-            {/* --- SECCIÓN DE ADMINISTRACIÓN GLOBAL --- */}
+            {/* --- ADMINISTRACIÓN: MI LOCALIDAD (Admin Local) --- */}
+            {/* Aquí usamos el nuevo componente autónomo */}
+            {activeTab === 'mi-localidad' && !isSuperAdmin && user.locationId && (
+                <EditInfoLocalidad locationId={user.locationId} />
+            )}
+
+            {/* --- SECCIÓN DE ADMINISTRACIÓN GLOBAL (Super Admin) --- */}
 
             {activeTab === 'usuarios' && isSuperAdmin && (
                 <div>
@@ -280,7 +298,7 @@ const AdminDashboard: React.FC = () => {
                             + Nuevo Usuario
                         </button>
                     </div>
-
+                    {/* Tabla de usuarios (sin cambios) */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
@@ -299,16 +317,10 @@ const AdminDashboard: React.FC = () => {
                                                 <div className="font-medium text-gray-900">{u.name}</div>
                                                 <div className="text-gray-500 text-xs">{u.email}</div>
                                             </td>
-                                            
-                                            {/* MODO EDICIÓN */}
                                             {editingUserId === u.id ? (
                                                 <>
                                                     <td className="px-6 py-4">
-                                                        <select 
-                                                            className="border rounded p-1 w-full"
-                                                            value={tempUserRole}
-                                                            onChange={(e) => setTempUserRole(e.target.value)}
-                                                        >
+                                                        <select className="border rounded p-1 w-full" value={tempUserRole} onChange={(e) => setTempUserRole(e.target.value)}>
                                                             <option value="USER">Usuario</option>
                                                             <option value="ADMIN">Admin Localidad</option>
                                                             <option value="SUPERADMIN">Super Admin</option>
@@ -316,19 +328,13 @@ const AdminDashboard: React.FC = () => {
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         {tempUserRole === 'ADMIN' ? (
-                                                            <select 
-                                                                className="border rounded p-1 w-full"
-                                                                value={tempUserLoc}
-                                                                onChange={(e) => setTempUserLoc(e.target.value)}
-                                                            >
+                                                            <select className="border rounded p-1 w-full" value={tempUserLoc} onChange={(e) => setTempUserLoc(e.target.value)}>
                                                                 <option value="">Seleccionar...</option>
                                                                 {locations.map(l => (
                                                                     <option key={l.id} value={l.id}>{l.name}</option>
                                                                 ))}
                                                             </select>
-                                                        ) : (
-                                                            <span className="text-gray-400 text-xs italic">No aplica</span>
-                                                        )}
+                                                        ) : <span className="text-gray-400 text-xs italic">No aplica</span>}
                                                     </td>
                                                     <td className="px-6 py-4 text-right space-x-2">
                                                         <button onClick={() => handleUpdateUser(u.id)} className="text-green-600 hover:text-green-800 font-bold text-xs uppercase">Guardar</button>
@@ -336,35 +342,22 @@ const AdminDashboard: React.FC = () => {
                                                     </td>
                                                 </>
                                             ) : (
-                                                /* MODO LECTURA */
                                                 <>
                                                     <td className="px-6 py-4">
                                                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                                                             u.role === 'SUPERADMIN' ? 'bg-purple-100 text-purple-800' :
-                                                            u.role === 'ADMIN' ? 'bg-green-100 text-green-800' :
-                                                            'bg-gray-100 text-gray-800'
-                                                        }`}>
-                                                            {u.role}
-                                                        </span>
+                                                            u.role === 'ADMIN' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                                        }`}>{u.role}</span>
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         {u.role === 'ADMIN' ? (
-                                                             u.locationId 
-                                                                ? <span className="text-cyan-700 font-medium">{locations.find(l => l.id === u.locationId)?.name || `ID: ${u.locationId}`}</span>
+                                                             u.locationId ? <span className="text-cyan-700 font-medium">{locations.find(l => l.id === u.locationId)?.name || `ID: ${u.locationId}`}</span>
                                                                 : <span className="text-red-500 text-xs">⚠ Sin Asignar</span>
-                                                        ) : (
-                                                            <span className="text-gray-400">-</span>
-                                                        )}
+                                                        ) : <span className="text-gray-400">-</span>}
                                                     </td>
                                                     <td className="px-6 py-4 text-right space-x-2">
-                                                        <button onClick={() => startEditUser(u)} className="text-blue-600 hover:text-blue-800" title="Editar Rol">
-                                                            <i className="fas fa-edit"></i>
-                                                        </button>
-                                                        {u.id !== user.id && (
-                                                            <button onClick={() => handleDeleteUser(u.id)} className="text-red-600 hover:text-red-800" title="Eliminar Usuario">
-                                                                <i className="fas fa-trash"></i>
-                                                            </button>
-                                                        )}
+                                                        <button onClick={() => startEditUser(u)} className="text-blue-600 hover:text-blue-800"><i className="fas fa-edit"></i></button>
+                                                        {u.id !== user.id && <button onClick={() => handleDeleteUser(u.id)} className="text-red-600 hover:text-red-800"><i className="fas fa-trash"></i></button>}
                                                     </td>
                                                 </>
                                             )}
@@ -403,13 +396,6 @@ const AdminDashboard: React.FC = () => {
                                 <div className="p-4">
                                     <h4 className="font-bold text-lg text-gray-800">{loc.name}</h4>
                                     <p className="text-xs text-gray-500 mb-2">Slug: /{loc.slug}</p>
-                                    <span className={`text-xs px-2 py-0.5 rounded border ${
-                                        loc.accentColor === 'cyan' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' : 
-                                        loc.accentColor === 'orange' ? 'bg-orange-50 text-orange-700 border-orange-200' : 
-                                        'bg-green-50 text-green-700 border-green-200'
-                                    }`}>
-                                        Color: {loc.accentColor}
-                                    </span>
                                 </div>
                             </div>
                         ))}
@@ -420,30 +406,28 @@ const AdminDashboard: React.FC = () => {
             {activeTab === 'resumen' && (
                 <div className="bg-white p-10 rounded shadow-sm border border-gray-100 text-center">
                     <h2 className="text-2xl font-bold mb-4 text-gray-800">Panel de Control</h2>
-                    <p className="text-gray-600 mb-6">Selecciona una opción del menú lateral para comenzar a gestionar el contenido.</p>
-                    <div className="flex justify-center gap-4">
-                         <div className="text-center p-4 bg-gray-50 rounded border w-32">
-                             <div className="text-2xl font-bold text-cyan-600">{locations.length}</div>
-                             <div className="text-xs text-gray-500 uppercase">Localidades</div>
-                         </div>
-                         {isSuperAdmin && (
+                    <p className="text-gray-600 mb-6">Bienvenido al sistema de gestión de turismo.</p>
+                    {isSuperAdmin && (
+                         <div className="flex justify-center gap-4">
                              <div className="text-center p-4 bg-gray-50 rounded border w-32">
-                                <div className="text-2xl font-bold text-purple-600">{users.length}</div>
-                                <div className="text-xs text-gray-500 uppercase">Usuarios</div>
-                            </div>
-                         )}
-                    </div>
+                                 <div className="text-2xl font-bold text-cyan-600">{locations.length}</div>
+                                 <div className="text-xs text-gray-500 uppercase">Localidades</div>
+                             </div>
+                        </div>
+                    )}
                 </div>
             )}
             
         </div>
 
-        {/* --- MODAL CREAR/EDITAR LOCALIDAD --- */}
-        {isLocModalOpen && editingLoc && (
+        {/* --- MODAL CREAR/EDITAR LOCALIDAD (PARA SUPERADMIN) --- */}
+        {/* Solo mostramos este modal si es SuperAdmin y estamos en 'localidades', 
+            ya que el Admin Local tiene su propio modal encapsulado */}
+        {isLocModalOpen && editingLoc && isSuperAdmin && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                 <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in">
                     <div className="p-6 border-b flex justify-between items-center">
-                        <h3 className="text-xl font-bold text-gray-800">{editingLoc.id ? 'Editar Localidad' : 'Nueva Localidad'}</h3>
+                        <h3 className="text-xl font-bold text-gray-800">{editingLoc.id ? 'Editar Información' : 'Nueva Localidad'}</h3>
                         <button onClick={() => setIsLocModalOpen(false)} className="text-gray-400 hover:text-gray-600"><i className="fas fa-times"></i></button>
                     </div>
                     <form onSubmit={handleSaveLocation} className="p-6 space-y-4">
@@ -457,7 +441,7 @@ const AdminDashboard: React.FC = () => {
                                 <input className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none" value={editingLoc.slug} onChange={e => setEditingLoc({...editingLoc, slug: e.target.value})} required />
                             </div>
                         </div>
-                        
+                        {/* ... resto del form de superadmin ... */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-bold mb-1">Color Acento</label>
@@ -495,16 +479,16 @@ const AdminDashboard: React.FC = () => {
 
                         <div className="flex justify-end gap-3 pt-4 border-t mt-4">
                             <button type="button" onClick={() => setIsLocModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                            <button type="submit" className="px-6 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700 font-bold">Guardar Localidad</button>
+                            <button type="submit" className="px-6 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700 font-bold">Guardar Cambios</button>
                         </div>
                     </form>
                 </div>
             </div>
         )}
 
-        {/* --- MODAL CREAR USUARIO --- */}
+        {/* Modal Crear Usuario... */}
         {isUserModalOpen && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                 <div className="bg-white rounded-lg shadow-xl w-full max-w-md animate-fade-in">
                     <div className="p-6 border-b flex justify-between items-center">
                         <h3 className="text-xl font-bold text-gray-800">Crear Nuevo Usuario</h3>
@@ -535,7 +519,6 @@ const AdminDashboard: React.FC = () => {
                                 <option value="SUPERADMIN">Super Admin</option>
                             </select>
                         </div>
-                        
                         {newUser.role === 'ADMIN' && (
                             <div className="animate-fade-in bg-blue-50 p-3 rounded border border-blue-100">
                                 <label className="block text-sm font-bold mb-1 text-blue-800">Asignar a Localidad</label>
@@ -548,7 +531,6 @@ const AdminDashboard: React.FC = () => {
                                 </select>
                             </div>
                         )}
-
                         <div className="flex justify-end gap-3 pt-4 border-t mt-4">
                             <button type="button" onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
                             <button type="submit" className="px-6 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700 font-bold">Crear Usuario</button>

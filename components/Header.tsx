@@ -59,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <>
       {/* Header con z-index corregido */}
-      <header className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-500 ease-in-out ${headerBgClass}`}>
+      <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${headerBgClass}`}>
         <div className="container mx-auto px-6 flex justify-between items-center relative z-[100]">
           
           {/* --- LOGO --- */}
@@ -139,7 +139,7 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* --- MOBILE BURGER MENU BUTTON --- */}
           <button 
-              className={`md:hidden text-2xl z-[1001] relative focus:outline-none transition-colors ${burgerColorClass}`}
+              className={`md:hidden text-2xl z-[101] relative focus:outline-none transition-colors ${burgerColorClass}`}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
               <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
@@ -150,7 +150,7 @@ const Header: React.FC<HeaderProps> = ({
 
       {/* --- MOBILE OVERLAY --- */}
       <div 
-        className={`fixed inset-0 bg-white/95 backdrop-blur-xl z-[999] transition-all duration-500 flex flex-col items-center justify-center space-y-8 h-[100dvh] w-screen ${
+        className={`fixed inset-0 bg-white/95 backdrop-blur-xl z-[99] transition-all duration-500 flex flex-col items-center justify-center space-y-8 h-[100dvh] w-screen ${
             mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
         }`}
       >

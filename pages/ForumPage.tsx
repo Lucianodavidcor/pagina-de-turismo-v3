@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import ReviewLightbox from '../components/ReviewLightbox'; // <--- Importamos el nuevo visualizador detallado
 import { HOME_NAV_LINKS } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import { getAllLocations } from '../services/locations';
 import { uploadImages } from '../services/content';
-import { createPost, getPublicPosts, deletePost, ForumPost } from '../services/forum'; // Importar deletePost
+import { createPost, getPublicPosts, deletePost, ForumPost } from '../services/forum';
 import type { LocationData } from '../types';
 
 const ForumPage: React.FC = () => {
@@ -15,10 +16,15 @@ const ForumPage: React.FC = () => {
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Estados para el formulario
   const [newPost, setNewPost] = useState({ rating: 5, text: '', locationId: 0, images: [] as string[] });
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
   const [hoverRating, setHoverRating] = useState(0);
+
+  // --- ESTADOS PARA EL VISUALIZADOR DETALLADO (Lightbox) ---
+  const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -38,6 +44,8 @@ const ForumPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // --- HANDLERS DE PUBLICACIÓN ---
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
@@ -86,33 +94,37 @@ const ForumPage: React.FC = () => {
     }
   };
 
-  // --- FUNCIÓN DE BORRADO ---
+  // --- LÓGICA DE BORRADO ---
   const handleDeletePost = async (id: number) => {
       if (!window.confirm('¿Estás seguro de que quieres eliminar esta reseña?')) return;
       try {
           await deletePost(id);
-          setPosts(prev => prev.filter(p => p.id !== id)); // Actualizar UI
+          setPosts(prev => prev.filter(p => p.id !== id));
           alert('Reseña eliminada correctamente.');
       } catch (error) {
           alert('No se pudo eliminar la reseña.');
       }
   };
 
-  // Helper para verificar permisos de borrado
   const canDelete = (post: ForumPost) => {
       if (!user) return false;
-      if (user.role === 'SUPERADMIN') return true; // Superadmin borra todo
-      if (user.id === post.userId) return true; // Dueño borra lo suyo
-      // Admin borra posts de su localidad
+      if (user.role === 'SUPERADMIN') return true;
+      if (user.id === post.userId) return true;
       if (user.role === 'ADMIN' && user.locationId === post.location_id) return true;
       return false;
+  };
+
+  // --- HANDLERS DEL VISUALIZADOR (ReviewLightbox) ---
+  const handleOpenReview = (post: ForumPost) => {
+    setSelectedPost(post);
+    setIsLightboxOpen(true);
   };
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans flex flex-col">
       <Header navLinks={HOME_NAV_LINKS} />
 
-      {/* --- HERO SECTION --- */}
+      {/* Hero Section */}
       <div className="bg-gradient-to-r from-cyan-700 to-blue-800 text-white pt-24 pb-32 px-6 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
           <div className="relative z-10 max-w-3xl mx-auto">
@@ -123,7 +135,7 @@ const ForumPage: React.FC = () => {
 
       <main className="container mx-auto px-6 -mt-20 relative z-20 pb-20 flex-1 max-w-5xl">
         
-        {/* --- FORMULARIO DE PUBLICACIÓN --- */}
+        {/* Formulario de Publicación */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-16 animate-fade-in-up">
             <div className="bg-gray-50 px-8 py-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -204,7 +216,7 @@ const ForumPage: React.FC = () => {
             </div>
         </div>
 
-        {/* --- LISTA DE RESEÑAS --- */}
+        {/* Lista de Reseñas */}
         <div>
             <div className="flex items-center justify-between mb-8">
                 <h2 className="text-3xl font-bold text-gray-800">Opiniones Recientes</h2>
@@ -221,13 +233,20 @@ const ForumPage: React.FC = () => {
             ) : (
                 <div className="grid gap-6">
                     {posts.map((post) => (
-                        <div key={post.id} className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 flex flex-col md:flex-row gap-6 group relative">
+                        <div 
+                            key={post.id} 
+                            onClick={() => handleOpenReview(post)} // <--- CLIC EN TODA LA TARJETA
+                            className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row gap-6 group relative cursor-pointer"
+                        >
                             
-                            {/* Botón Borrar (Solo visible si tienes permiso) */}
+                            {/* Botón Borrar */}
                             {canDelete(post) && (
                                 <button 
-                                    onClick={() => handleDeletePost(post.id)}
-                                    className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors p-2"
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Evitamos abrir el modal al borrar
+                                        handleDeletePost(post.id!);
+                                    }}
+                                    className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors p-2 z-10"
                                     title="Eliminar Reseña"
                                 >
                                     <i className="fas fa-trash-alt"></i>
@@ -243,14 +262,14 @@ const ForumPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <p className="font-bold text-gray-900 leading-tight">{post.author}</p>
-                                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1"><i className="far fa-calendar-alt"></i> {new Date(post.created_at).toLocaleDateString()}</p>
+                                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1"><i className="far fa-calendar-alt"></i> {new Date(post.created_at!).toLocaleDateString()}</p>
                                 </div>
                             </div>
                             
                             {/* Columna Contenido */}
                             <div className="flex-1 relative">
                                 <div className="absolute -top-2 -left-2 text-6xl text-gray-100 font-serif opacity-50 select-none">"</div>
-                                <div className="flex flex-wrap justify-between items-center mb-4 relative z-10 pr-8"> {/* pr-8 para no tapar botón borrar */}
+                                <div className="flex flex-wrap justify-between items-center mb-4 relative z-10 pr-8">
                                     <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-100">
                                         <i className="fas fa-map-marker-alt"></i> {post.location_name || 'Neuquén'}
                                     </span>
@@ -258,14 +277,21 @@ const ForumPage: React.FC = () => {
                                         {[...Array(5)].map((_, i) => <i key={i} className={`fas fa-star ${i < post.rating ? '' : 'text-gray-200'}`}></i>)}
                                     </div>
                                 </div>
-                                <p className="text-gray-600 leading-relaxed mb-6 relative z-10">{post.text}</p>
+                                <p className="text-gray-600 leading-relaxed mb-6 relative z-10 line-clamp-3">
+                                    {post.text}
+                                </p>
                                 {post.images && post.images.length > 0 && (
                                     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                                         {post.images.map((img, i) => (
-                                            <div key={i} className="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-90 transition">
+                                            <div key={i} className="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-gray-200">
                                                 <img src={img} className="w-full h-full object-cover" alt="Review shot" />
                                             </div>
                                         ))}
+                                        {post.images.length > 4 && (
+                                            <div className="flex-shrink-0 w-24 h-24 rounded-lg bg-black/60 flex items-center justify-center text-white text-xs font-bold">
+                                                +{post.images.length - 4} fotos
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -276,6 +302,13 @@ const ForumPage: React.FC = () => {
         </div>
       </main>
       
+      {/* VISUALIZADOR DETALLADO */}
+      <ReviewLightbox 
+        post={selectedPost}
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+      />
+
       <Footer />
     </div>
   );

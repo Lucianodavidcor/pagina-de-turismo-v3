@@ -2,30 +2,36 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import Loader from '../components/ui/Loader'; // IMPORTANTE: Importamos el Loader
+import Loader from '../components/ui/Loader'; 
+import ReviewLightbox from '../components/ReviewLightbox'; // <--- Nuevo Import
 import { HOME_NAV_LINKS } from '../constants';
-// Eliminamos imports de fetching directo (getAllLocations, etc) porque ahora lo hace el hook
 import { createPost, ForumPost } from '../services/forum';
 import { uploadImages } from '../services/content';
 import { useAuth } from '../context/AuthContext';
-// IMPORTANTE: Importamos el hook de caché
 import { useHomeData } from '../hooks/useHomeData';
 
 const HomePage: React.FC = () => {
   const { user } = useAuth();
   
   // --- LÓGICA DE CACHÉ Y CARGA ---
-  // Reemplazamos los useState y useEffect antiguos por esta sola línea.
-  // Al volver al home, 'loading' será false instantáneamente si ya hay datos.
   const { locations, forumPosts, adventureImages, loading } = useHomeData();
 
-  // Estados locales solo para el formulario (esto no necesita caché)
+  // Estados locales para el formulario
   const [newPost, setNewPost] = useState({ text: '', rating: 5, locationId: 0, images: [] as string[] });
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
   const [hoverRating, setHoverRating] = useState(0);
 
-  // --- HANDLERS DEL FORMULARIO (Se mantienen igual) ---
+  // --- ESTADOS PARA EL FORO NUEVO (DETALLE) ---
+  const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  // --- HANDLERS ---
+  const handleOpenReview = (post: ForumPost) => {
+    setSelectedPost(post);
+    setIsLightboxOpen(true);
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     setUploading(true);
@@ -69,14 +75,10 @@ const HomePage: React.FC = () => {
     }
   };
 
-  // --- RENDERIZADO ---
-  
-  // 1. Si está cargando (y no hay caché), mostramos tu animación nueva
   if (loading) {
     return <Loader />;
   }
 
-  // 2. Si ya cargó, mostramos tu diseño intacto
   return (
     <div className="bg-white font-sans">
       <Header navLinks={HOME_NAV_LINKS} isHome={true} />
@@ -102,7 +104,6 @@ const HomePage: React.FC = () => {
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Destinos Imperdibles</h2>
           <div className="grid md:grid-cols-2 gap-8 w-full max-w-6xl mx-auto">
-              {/* Nota: loading ya se maneja arriba con el Loader, pero dejamos el map seguro */}
               {locations.map((loc) => (
                 <div key={loc.id} className="relative rounded-2xl overflow-hidden shadow-xl transform hover:-translate-y-2 transition-transform duration-300 h-96 group cursor-pointer">
                   <img src={loc.hero.image} alt={loc.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -141,7 +142,6 @@ const HomePage: React.FC = () => {
 
       {/* FORO DE VIAJEROS */}
       <section className="py-24 bg-slate-50 relative overflow-hidden">
-        {/* Decoración fondo */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
         <div className="absolute -bottom-8 left-0 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
 
@@ -149,7 +149,6 @@ const HomePage: React.FC = () => {
           <h2 className="text-4xl font-bold text-center text-gray-800 mb-4">La Voz de los Viajeros</h2>
           <p className="text-center text-gray-500 mb-12 max-w-2xl mx-auto">Únete a nuestra comunidad y comparte tus mejores momentos en el norte neuquino.</p>
           
-          {/* Formulario Estilizado */}
           <div className="bg-white p-8 rounded-2xl shadow-xl mb-16 border border-gray-100">
             {msg.text && (
                 <div className={`p-3 mb-6 rounded text-center text-sm font-bold ${msg.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -174,7 +173,6 @@ const HomePage: React.FC = () => {
             ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
-                        {/* Selector Localidad */}
                         <div className="relative">
                             <select 
                                 className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 outline-none appearance-none"
@@ -188,7 +186,6 @@ const HomePage: React.FC = () => {
                             <div className="absolute right-3 top-3.5 text-gray-400 pointer-events-none"><i className="fas fa-chevron-down"></i></div>
                         </div>
 
-                        {/* Estrellas */}
                         <div className="flex items-center justify-between bg-gray-50 px-4 py-2 rounded-xl border border-gray-200">
                             <span className="text-sm text-gray-500 font-medium">Calificación:</span>
                             <div className="flex gap-1">
@@ -236,36 +233,54 @@ const HomePage: React.FC = () => {
             )}
           </div>
 
-          {/* Lista de Reseñas */}
+          {/* Lista de Reseñas - Implementación del Foro Nuevo */}
           <div className="grid gap-6">
             {forumPosts.map((post) => (
-                <div key={post.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition flex gap-4">
+                <div 
+                    key={post.id} 
+                    onClick={() => handleOpenReview(post)} // <--- CLIC PARA ABRIR EL DETALLE
+                    className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex gap-4 cursor-pointer group"
+                >
                     <div className="flex-shrink-0">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 p-0.5">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 p-0.5 shadow-sm">
                             <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden">
-                                {post.avatar_url ? <img src={post.avatar_url} className="w-full h-full object-cover"/> : <span className="font-bold text-gray-500">{post.author.charAt(0)}</span>}
+                                {post.avatar_url ? (
+                                    <img src={post.avatar_url} className="w-full h-full object-cover" alt={post.author}/>
+                                ) : (
+                                    <span className="font-bold text-gray-500">{post.author.charAt(0).toUpperCase()}</span>
+                                )}
                             </div>
                         </div>
                     </div>
                     <div className="flex-1">
                         <div className="flex justify-between items-start">
                             <div>
-                                <h4 className="font-bold text-gray-900">{post.author}</h4>
-                                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                                    <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                                    <span>•</span>
-                                    <span className="text-cyan-600 font-semibold">{post.location_name}</span>
+                                <h4 className="font-bold text-gray-900 leading-tight">{post.author}</h4>
+                                <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-1 uppercase tracking-wider">
+                                    <span>{new Date(post.created_at!).toLocaleDateString()}</span>
+                                    <span className="text-cyan-600 font-extrabold">• {post.location_name}</span>
                                 </div>
                             </div>
-                            <div className="flex text-yellow-400 text-sm">
-                                {[...Array(5)].map((_, i) => <i key={i} className={`fas fa-star ${i < post.rating ? '' : 'text-gray-200'}`}></i>)}
+                            <div className="flex text-yellow-400 text-sm bg-yellow-50 px-2 py-1 rounded-md">
+                                {[...Array(5)].map((_, i) => (
+                                    <i key={i} className={`fas fa-star ${i < post.rating ? '' : 'text-gray-200'}`}></i>
+                                ))}
                             </div>
                         </div>
-                        <p className="text-gray-600 text-sm leading-relaxed mb-3">"{post.text}"</p>
+                        <p className="text-gray-600 text-sm leading-relaxed my-3 line-clamp-2 italic">
+                            "{post.text}"
+                        </p>
                         {post.images?.length > 0 && (
                             <div className="flex gap-2">
-                                {post.images.map((img, i) => (
-                                    <img key={i} src={img} className="w-16 h-12 object-cover rounded-lg border border-gray-100" />
+                                {post.images.slice(0, 3).map((img, i) => (
+                                    <div key={i} className="relative w-16 h-12 rounded-lg overflow-hidden border border-gray-100">
+                                        <img src={img} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Preview"/>
+                                        {i === 2 && post.images.length > 3 && (
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-[10px] font-bold">
+                                                +{post.images.length - 3}
+                                            </div>
+                                        )}
+                                    </div>
                                 ))}
                             </div>
                         )}
@@ -275,13 +290,20 @@ const HomePage: React.FC = () => {
           </div>
           
           <div className="text-center mt-12">
-            <Link to="/foro" className="inline-flex items-center gap-2 text-cyan-700 font-bold hover:text-cyan-900 transition">
-                Ver todas las experiencias <i className="fas fa-arrow-right"></i>
+            <Link to="/foro" className="inline-flex items-center gap-2 text-cyan-700 font-bold hover:text-cyan-900 transition group">
+                Ver todas las experiencias 
+                <i className="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
             </Link>
           </div>
-
         </div>
       </section>
+
+      {/* VISUALIZADOR DETALLADO (Lightbox) */}
+      <ReviewLightbox 
+        post={selectedPost}
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+      />
       
       <Footer />
     </div>

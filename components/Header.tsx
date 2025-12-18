@@ -31,7 +31,7 @@ const Header: React.FC<HeaderProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 2. BLOQUEO DE SCROLL: Cuando el menú abre, congelamos el body
+  // 2. BLOQUEO DE SCROLL
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -44,8 +44,9 @@ const Header: React.FC<HeaderProps> = ({
   // Lógica de estilos
   const isTransparent = isHome && !scrolled && !mobileMenuOpen;
   
+  // FIX VISUAL: Agregamos 'py-4' cuando el menú está abierto para dar margen top
   const headerBgClass = mobileMenuOpen 
-    ? 'bg-transparent' 
+    ? 'bg-transparent py-4' // <--- AQUI ESTABA EL DETALLE (antes no tenía py)
     : isTransparent 
         ? 'bg-transparent py-6' 
         : 'bg-white/95 backdrop-blur-md shadow-md py-3';
@@ -57,8 +58,8 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      {/* FIX: z-[1000] para que esté siempre encima del Mapa (que usa z-400+) */}
-      <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${headerBgClass}`}>
+      {/* Header con z-index corregido */}
+      <header className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-500 ease-in-out ${headerBgClass}`}>
         <div className="container mx-auto px-6 flex justify-between items-center relative z-[100]">
           
           {/* --- LOGO --- */}

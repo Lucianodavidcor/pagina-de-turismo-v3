@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getAllLocations, updateLocation } from '../../services/locations';
 import { uploadImages } from '../../services/content';
 import type { LocationData } from '../../types';
+import LocationPicker from '../ui/LocationPicker'; // <--- Importamos el nuevo componente
 
 interface Props {
   locationId: number;
@@ -15,7 +16,7 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
   const [successMsg, setSuccessMsg] = useState('');
 
   // --- ESTADOS DE INTERFAZ ---
-  const [isEditing, setIsEditing] = useState(false); // <--- El interruptor principal
+  const [isEditing, setIsEditing] = useState(false);
   const [editingLoc, setEditingLoc] = useState<Partial<LocationData> | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -31,7 +32,7 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
       
       if (myLoc) {
         setLocation(myLoc);
-        // Pre-cargamos los datos de edición por si el usuario activa el modo inmediatamente
+        // Pre-cargamos los datos de edición
         setEditingLoc(JSON.parse(JSON.stringify(myLoc)));
       } else {
         setError('No se encontró la información de tu localidad.');
@@ -48,12 +49,12 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
   
   const toggleEditing = () => {
     if (isEditing) {
-        // Si ESTAMOS editando y cancelamos, reseteamos los cambios
+        // Cancelar: revertir cambios
         if (location) setEditingLoc(JSON.parse(JSON.stringify(location)));
         setIsEditing(false);
         setSuccessMsg('');
     } else {
-        // Si VAMOS a editar, nos aseguramos de tener la data fresca
+        // Habilitar: asegurar copia fresca
         if (location) setEditingLoc(JSON.parse(JSON.stringify(location)));
         setIsEditing(true);
         setSuccessMsg('');
@@ -83,19 +84,31 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
     }
   };
 
+  // Handler específico para el mapa
+  const handleMapUpdate = (lat: number, lng: number) => {
+      if (editingLoc && editingLoc.mapCenter) {
+          setEditingLoc({
+              ...editingLoc,
+              mapCenter: {
+                  ...editingLoc.mapCenter,
+                  lat: parseFloat(lat.toFixed(6)), // Redondear para limpieza visual
+                  lng: parseFloat(lng.toFixed(6))
+              }
+          });
+      }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingLoc || !location) return;
 
     try {
-      setUploading(true); // Reusamos loading state visualmente
+      setUploading(true);
       await updateLocation(location.id, editingLoc);
       
-      // Actualizamos el estado local "oficial"
       setLocation(editingLoc as LocationData);
-      
       setSuccessMsg('¡Información actualizada correctamente!');
-      setIsEditing(false); // Salimos del modo edición
+      setIsEditing(false);
       
       setTimeout(() => setSuccessMsg(''), 5000);
     } catch (err: any) {
@@ -140,18 +153,18 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                 }`}
             >
                 {isEditing ? (
-                    <><i className="fas fa-times"></i> Cancelar Edición</>
+                    <><i className="fas fa-times"></i> Cancelar</>
                 ) : (
-                    <><i className="fas fa-pen"></i> Habilitar Edición</>
+                    <><i className="fas fa-pen"></i> Editar Info</>
                 )}
             </button>
         </div>
       </div>
 
-      {/* --- CONTENIDO PRINCIPAL (Switchea entre VISTA y FORMULARIO) --- */}
+      {/* --- CONTENIDO PRINCIPAL --- */}
       
       {!isEditing ? (
-        // ================= VISTA DE LECTURA (READ-ONLY) =================
+        // ================= VISTA DE LECTURA =================
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-fade-in">
             {/* Hero Image Preview */}
             <div className="relative h-64 md:h-80 group">
@@ -185,22 +198,21 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                             {location.bookingButton ? 'Visible' : 'Oculto'}
                         </span>
                     </div>
-
-                    <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
+                    
+                     <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
                         <span className="text-gray-500 text-sm font-medium">URL Slug:</span>
                         <code className="bg-gray-100 px-2 py-1 rounded text-sm text-gray-600 font-mono">/{location.slug}</code>
                     </div>
                 </div>
 
                 <div className="space-y-5">
-                    <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wider border-b pb-2">Geolocalización</h4>
-                    <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+                    <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wider border-b pb-2">Geolocalización Actual</h4>
+                    <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-center gap-4 shadow-sm">
                         <div className="bg-cyan-50 p-3 rounded-full text-cyan-600 text-xl"><i className="fas fa-map-marked-alt"></i></div>
                         <div>
-                            <div className="text-xs text-gray-500 uppercase font-bold">Centro del Mapa</div>
+                            <div className="text-xs text-gray-500 uppercase font-bold">Coordenadas</div>
                             <div className="font-mono text-gray-800 mt-1 text-sm">
-                                Lat: <span className="font-bold">{location.mapCenter.lat}</span><br/>
-                                Lng: <span className="font-bold">{location.mapCenter.lng}</span>
+                                {location.mapCenter.lat}, {location.mapCenter.lng}
                             </div>
                         </div>
                     </div>
@@ -209,10 +221,9 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
         </div>
 
       ) : (
-        // ================= VISTA DE EDICIÓN (FORMULARIO) =================
+        // ================= VISTA DE EDICIÓN =================
         <form onSubmit={handleSave} className="bg-white rounded-xl shadow-xl border-2 border-cyan-500 overflow-hidden animate-fade-in relative">
             
-            {/* Banner superior indicando modo edición */}
             <div className="bg-cyan-50 text-cyan-800 text-xs font-bold text-center py-1 uppercase tracking-widest">
                 Modo Edición Activo
             </div>
@@ -222,14 +233,14 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                 {/* 1. SECCIÓN PRINCIPAL */}
                 <section>
                     <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <span className="w-6 h-6 rounded bg-gray-200 text-gray-600 flex items-center justify-center text-xs">1</span>
+                        <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">1</span>
                         Información Básica
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 mb-1">NOMBRE VISIBLE</label>
                             <input 
-                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" 
+                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none transition" 
                                 value={editingLoc.name} 
                                 onChange={e => setEditingLoc({...editingLoc, name: e.target.value})} 
                                 required 
@@ -238,7 +249,7 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                         <div>
                             <label className="block text-xs font-bold text-gray-500 mb-1">COLOR DE ACENTO</label>
                             <select 
-                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none bg-white" 
+                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none bg-white transition" 
                                 value={editingLoc.accentColor} 
                                 onChange={e => setEditingLoc({...editingLoc, accentColor: e.target.value as any})}
                             >
@@ -247,34 +258,15 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                                 <option value="green">Verde (Naturaleza)</option>
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1">BOTÓN RESERVA</label>
-                            <select 
-                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none bg-white" 
-                                value={editingLoc.bookingButton ? 'yes' : 'no'} 
-                                onChange={e => setEditingLoc({...editingLoc, bookingButton: e.target.value === 'yes'})}
-                            >
-                                <option value="yes">Mostrar Botón</option>
-                                <option value="no">Ocultar Botón</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 mb-1">SLUG (NO EDITABLE)</label>
-                            <input 
-                                className="w-full border border-gray-200 p-2.5 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed" 
-                                value={editingLoc.slug} 
-                                readOnly 
-                            />
-                        </div>
                     </div>
                 </section>
 
                 <hr className="border-gray-100" />
 
-                {/* 2. SECCIÓN HERO (PORTADA) */}
+                {/* 2. SECCIÓN HERO */}
                 <section>
                     <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <span className="w-6 h-6 rounded bg-gray-200 text-gray-600 flex items-center justify-center text-xs">2</span>
+                        <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">2</span>
                         Portada y Textos
                     </h4>
                     
@@ -297,11 +289,10 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                         </div>
                     </div>
 
-                    {/* Image Uploader Integrado */}
-                    <div className="bg-gray-50 rounded-xl p-4 border border-dashed border-gray-300">
+                    <div className="bg-gray-50 rounded-xl p-4 border border-dashed border-gray-300 transition hover:bg-gray-100/50">
                         <label className="block text-xs font-bold text-gray-500 mb-3">IMAGEN DE FONDO</label>
                         <div className="flex gap-4 items-center">
-                            <div className="w-24 h-24 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 border shadow-sm">
+                            <div className="w-24 h-24 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 border shadow-sm group relative">
                                 <img src={editingLoc.hero?.image} alt="Preview" className="w-full h-full object-cover" />
                             </div>
                             <div className="flex-1">
@@ -311,14 +302,11 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                                     onChange={e => setEditingLoc({...editingLoc, hero: {...editingLoc.hero!, image: e.target.value}})} 
                                     placeholder="URL de la imagen..."
                                 />
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs text-gray-400">O sube una nueva:</span>
-                                    <label className={`cursor-pointer px-3 py-1.5 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50 text-gray-600 flex items-center gap-2 ${uploading ? 'opacity-50' : ''}`}>
-                                        {uploading ? <i className="fas fa-spinner animate-spin"></i> : <i className="fas fa-upload"></i>} 
-                                        {uploading ? 'Subiendo...' : 'Seleccionar archivo'}
-                                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
-                                    </label>
-                                </div>
+                                <label className={`cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50 text-gray-600 transition ${uploading ? 'opacity-50' : ''}`}>
+                                    {uploading ? <i className="fas fa-spinner animate-spin"></i> : <i className="fas fa-upload"></i>} 
+                                    {uploading ? 'Subiendo...' : 'Subir archivo nuevo'}
+                                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -326,61 +314,82 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
 
                 <hr className="border-gray-100" />
 
-                {/* 3. MAPA */}
+                {/* 3. MAPA INTERACTIVO */}
                 <section>
                     <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <span className="w-6 h-6 rounded bg-gray-200 text-gray-600 flex items-center justify-center text-xs">3</span>
-                        Ubicación en Mapa
+                        <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">3</span>
+                        Ubicación Geográfica
                     </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1">LATITUD</label>
-                            <input 
-                                type="number" step="any"
-                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none font-mono" 
-                                value={editingLoc.mapCenter?.lat} 
-                                onChange={e => setEditingLoc({...editingLoc, mapCenter: {...editingLoc.mapCenter!, lat: parseFloat(e.target.value)}})} 
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                        {/* MAPA */}
+                        <div className="order-2 lg:order-1">
+                            <label className="block text-xs font-bold text-gray-500 mb-2 flex justify-between">
+                                <span>SELECCIONA EN EL MAPA</span>
+                                <span className="text-cyan-600 font-normal normal-case"><i className="fas fa-mouse-pointer"></i> Click para mover</span>
+                            </label>
+                            {/* Renderizamos el componente LocationPicker pasándole las coords actuales */}
+                            <LocationPicker 
+                                initialLat={editingLoc.mapCenter?.lat || 0}
+                                initialLng={editingLoc.mapCenter?.lng || 0}
+                                onLocationSelect={handleMapUpdate}
                             />
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1">LONGITUD</label>
-                            <input 
-                                type="number" step="any"
-                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none font-mono" 
-                                value={editingLoc.mapCenter?.lng} 
-                                onChange={e => setEditingLoc({...editingLoc, mapCenter: {...editingLoc.mapCenter!, lng: parseFloat(e.target.value)}})} 
-                            />
+
+                        {/* INPUTS MANUALES */}
+                        <div className="order-1 lg:order-2 space-y-5">
+                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
+                                <i className="fas fa-info-circle mr-2 text-blue-500"></i>
+                                Puedes arrastrar el mapa y hacer clic en la ubicación exacta, o ingresar las coordenadas manualmente abajo.
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">LATITUD</label>
+                                    <input 
+                                        type="number" step="any"
+                                        className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none font-mono text-sm" 
+                                        value={editingLoc.mapCenter?.lat} 
+                                        onChange={e => setEditingLoc({...editingLoc, mapCenter: {...editingLoc.mapCenter!, lat: parseFloat(e.target.value)}})} 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">LONGITUD</label>
+                                    <input 
+                                        type="number" step="any"
+                                        className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none font-mono text-sm" 
+                                        value={editingLoc.mapCenter?.lng} 
+                                        onChange={e => setEditingLoc({...editingLoc, mapCenter: {...editingLoc.mapCenter!, lng: parseFloat(e.target.value)}})} 
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
 
             </div>
 
-            {/* ACTION BAR (Sticky Bottom) */}
-            <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center sticky bottom-0 z-10">
-                <span className="text-xs text-gray-500 hidden md:inline">
-                    <i className="fas fa-info-circle mr-1"></i> Recuerda guardar para aplicar los cambios.
-                </span>
-                <div className="flex gap-3 w-full md:w-auto justify-end">
-                    <button 
-                        type="button"
-                        onClick={toggleEditing}
-                        className="px-5 py-2.5 text-gray-600 font-medium hover:text-red-500 transition"
-                    >
-                        Cancelar
-                    </button>
-                    <button 
-                        type="submit"
-                        disabled={uploading}
-                        className={`px-8 py-2.5 bg-cyan-600 text-white font-bold rounded-lg shadow-lg hover:bg-cyan-700 hover:shadow-cyan-500/30 transition transform hover:-translate-y-0.5 flex items-center gap-2 ${uploading ? 'opacity-50 cursor-wait' : ''}`}
-                    >
-                        {uploading ? (
-                            <>Procesando...</>
-                        ) : (
-                            <><i className="fas fa-save"></i> Guardar Cambios</>
-                        )}
-                    </button>
-                </div>
+            {/* ACTION BAR */}
+            <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3 sticky bottom-0 z-10 shadow-inner">
+                <button 
+                    type="button"
+                    onClick={toggleEditing}
+                    className="px-5 py-2.5 text-gray-600 font-medium hover:text-red-500 transition"
+                    disabled={uploading}
+                >
+                    Cancelar
+                </button>
+                <button 
+                    type="submit"
+                    disabled={uploading}
+                    className={`px-8 py-2.5 bg-cyan-600 text-white font-bold rounded-lg shadow hover:bg-cyan-700 transition transform active:scale-95 flex items-center gap-2 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    {uploading ? (
+                        <>Procesando...</>
+                    ) : (
+                        <><i className="fas fa-save"></i> Guardar Cambios</>
+                    )}
+                </button>
             </div>
         </form>
       )}

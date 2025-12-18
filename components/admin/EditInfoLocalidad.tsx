@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAllLocations, updateLocation } from '../../services/locations';
+import { uploadImages } from '../../services/content'; // <--- IMPORTANTE: Reutilizamos el servicio
 import type { LocationData } from '../../types';
 
 interface Props {
@@ -15,6 +16,9 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
   // Estados para el Modal de Edición
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLoc, setEditingLoc] = useState<Partial<LocationData> | null>(null);
+  
+  // Estado para la subida de imagen
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadLocationData();
@@ -23,8 +27,6 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
   const loadLocationData = async () => {
     setLoading(true);
     try {
-      // Como no tenemos un endpoint 'getLocationById', traemos todas y filtramos.
-      // Esto es seguro porque el filtrado ocurre aquí, y el usuario solo ve la suya.
       const allLocs = await getAllLocations();
       const myLoc = allLocs.find(l => l.id === locationId);
       
@@ -43,9 +45,36 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
 
   const openEditModal = () => {
     if (!location) return;
-    setEditingLoc(JSON.parse(JSON.stringify(location))); // Copia profunda para editar
+    setEditingLoc(JSON.parse(JSON.stringify(location))); 
     setIsModalOpen(true);
     setSuccessMsg('');
+  };
+
+  // --- LÓGICA DE SUBIDA DE IMAGEN (Adaptada de ForumPage) ---
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setUploading(true);
+    try {
+        // Reutilizamos el servicio 'uploadImages' existente
+        const urls = await uploadImages(e.target.files);
+        
+        if (urls.length > 0 && editingLoc && editingLoc.hero) {
+            // Actualizamos el estado con la nueva URL (usamos la primera imagen subida)
+            setEditingLoc({
+                ...editingLoc,
+                hero: {
+                    ...editingLoc.hero,
+                    image: urls[0]
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Error upload:", error);
+        alert('Error al subir la imagen. Intenta nuevamente.');
+    } finally {
+        setUploading(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -56,23 +85,21 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
       await updateLocation(location.id, editingLoc);
       setSuccessMsg('¡Información actualizada correctamente!');
       setIsModalOpen(false);
-      loadLocationData(); // Recargamos para ver los cambios frescos
-      
-      // Auto-ocultar mensaje de éxito
+      loadLocationData(); 
       setTimeout(() => setSuccessMsg(''), 5000);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al guardar los cambios.');
     }
   };
 
-  if (loading) return <div className="p-10 text-center text-gray-500">Cargando información de tu localidad...</div>;
+  if (loading) return <div className="p-10 text-center text-gray-500">Cargando información...</div>;
   if (error) return <div className="p-10 text-center text-red-500 font-bold">{error}</div>;
   if (!location) return null;
 
   return (
     <div className="space-y-6 animate-fade-in">
       
-      {/* HEADER DE LA SECCIÓN */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
            <h3 className="text-2xl font-bold text-gray-800">Mi Localidad: <span className="text-cyan-600">{location.name}</span></h3>
@@ -93,82 +120,53 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
         </button>
       </div>
 
-      {/* TARJETA DE VISTA PREVIA (READ ONLY) */}
+      {/* TARJETA DE VISTA PREVIA */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        {/* Hero Preview */}
         <div className="relative h-64 md:h-80 group">
             <img src={location.hero.image} alt={location.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-8">
                 <div className="text-white">
-                    <span className="bg-cyan-500 text-xs font-bold px-2 py-1 rounded mb-2 inline-block">PORTADA (HERO)</span>
+                    <span className="bg-cyan-500 text-xs font-bold px-2 py-1 rounded mb-2 inline-block">PORTADA ACTUAL</span>
                     <h2 className="text-4xl font-bold mb-2 shadow-black drop-shadow-lg">{location.hero.title}</h2>
                     <p className="text-lg opacity-90 shadow-black drop-shadow-md">{location.hero.subtitle}</p>
                 </div>
             </div>
         </div>
         
-        {/* Detalles Técnicos */}
         <div className="p-8 grid md:grid-cols-2 gap-8 bg-gray-50/50">
             <div className="space-y-4">
                 <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wider border-b pb-2">Configuración General</h4>
-                
                 <div className="flex justify-between items-center">
                     <span className="text-gray-600 font-medium">Color de Acento:</span>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
                         location.accentColor === 'cyan' ? 'bg-cyan-100 text-cyan-800' :
                         location.accentColor === 'orange' ? 'bg-orange-100 text-orange-800' :
                         'bg-green-100 text-green-800'
-                    }`}>
-                        {location.accentColor}
-                    </span>
+                    }`}>{location.accentColor}</span>
                 </div>
-                
-                <div className="flex justify-between items-center">
-                    <span className="text-gray-600 font-medium">Botón Reserva:</span>
-                    <div className={`flex items-center gap-2 font-bold ${location.bookingButton ? 'text-green-600' : 'text-gray-400'}`}>
-                        <i className={`fas ${location.bookingButton ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
-                        {location.bookingButton ? 'Activado' : 'Desactivado'}
-                    </div>
-                </div>
-
                 <div className="flex justify-between items-center">
                     <span className="text-gray-600 font-medium">URL Slug:</span>
                     <code className="bg-gray-200 px-2 py-1 rounded text-sm text-blue-600 font-mono">/{location.slug}</code>
                 </div>
             </div>
-
             <div className="space-y-4">
                 <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wider border-b pb-2">Geolocalización</h4>
                 <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-center gap-4 shadow-sm">
-                    <div className="bg-cyan-50 p-3 rounded-full text-cyan-600 text-xl">
-                        <i className="fas fa-map-marked-alt"></i>
-                    </div>
+                    <div className="bg-cyan-50 p-3 rounded-full text-cyan-600 text-xl"><i className="fas fa-map-marked-alt"></i></div>
                     <div>
-                        <div className="text-xs text-gray-500 uppercase font-bold">Coordenadas Centrales</div>
-                        <div className="font-mono text-gray-800 mt-1">
-                            Lat: <b>{location.mapCenter.lat}</b> <br/>
-                            Lng: <b>{location.mapCenter.lng}</b>
-                        </div>
+                        <div className="text-xs text-gray-500 uppercase font-bold">Coordenadas</div>
+                        <div className="font-mono text-gray-800 mt-1">{location.mapCenter.lat}, {location.mapCenter.lng}</div>
                     </div>
                 </div>
             </div>
         </div>
       </div>
-      
-      <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex gap-3 text-blue-800 text-sm">
-          <i className="fas fa-info-circle mt-0.5 text-lg"></i>
-          <div>
-              <p className="font-bold">¿Qué puedo editar aquí?</p>
-              <p>Aquí gestionas la identidad visual y los datos base. Para agregar <strong>Atracciones</strong> o <strong>Actividades</strong>, usa las pestañas del menú lateral.</p>
-          </div>
-      </div>
 
-      {/* --- MODAL DE EDICIÓN (LÓGICA INTERNA) --- */}
+      {/* --- MODAL DE EDICIÓN --- */}
       {isModalOpen && editingLoc && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[2000] p-4 backdrop-blur-sm">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in-up">
                 
-                {/* Modal Header */}
                 <div className="p-6 border-b bg-gray-50 flex justify-between items-center sticky top-0 z-10">
                     <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                         <i className="fas fa-edit text-cyan-600"></i> Editar {location.name}
@@ -178,15 +176,13 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                     </button>
                 </div>
 
-                {/* Modal Form */}
                 <form onSubmit={handleSave} className="p-6 space-y-6">
                     
-                    {/* Sección 1: Datos Básicos */}
                     <div className="grid grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-bold mb-2 text-gray-700">Nombre Visible</label>
                             <input 
-                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none transition-all" 
+                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" 
                                 value={editingLoc.name} 
                                 onChange={e => setEditingLoc({...editingLoc, name: e.target.value})} 
                                 required 
@@ -195,15 +191,14 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                         <div>
                             <label className="block text-sm font-bold mb-2 text-gray-700">Slug (URL)</label>
                             <input 
-                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none transition-all bg-gray-50" 
+                                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none bg-gray-50 cursor-not-allowed" 
                                 value={editingLoc.slug} 
-                                onChange={e => setEditingLoc({...editingLoc, slug: e.target.value})} 
-                                required 
+                                readOnly
+                                title="El slug no se debe cambiar para evitar romper enlaces"
                             />
                         </div>
                     </div>
                     
-                    {/* Sección 2: Configuración Visual */}
                     <div className="grid grid-cols-2 gap-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <div>
                             <label className="block text-sm font-bold mb-2 text-gray-700">Color de Acento</label>
@@ -230,7 +225,7 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                         </div>
                     </div>
 
-                    {/* Sección 3: Hero */}
+                    {/* SECCIÓN HERO CON SUBIDA DE IMAGEN */}
                     <div className="border-t pt-4">
                         <h4 className="font-bold mb-4 text-cyan-700 text-sm uppercase tracking-wider flex items-center gap-2">
                             <i className="fas fa-image"></i> Portada (Hero Section)
@@ -245,6 +240,48 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                                     required 
                                 />
                             </div>
+                            
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">IMAGEN DE FONDO</label>
+                                <div className="flex gap-2 items-center">
+                                    {/* Input de URL (editable manualmente si se quiere) */}
+                                    <input 
+                                        className="flex-1 border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 font-mono text-sm" 
+                                        value={editingLoc.hero?.image} 
+                                        onChange={e => setEditingLoc({...editingLoc, hero: {...editingLoc.hero!, image: e.target.value}})} 
+                                        placeholder="https://..."
+                                        required 
+                                    />
+                                    
+                                    {/* Botón de Subida */}
+                                    <label className={`cursor-pointer px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 transition flex items-center gap-2 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                        {uploading ? (
+                                            <i className="fas fa-circle-notch animate-spin text-cyan-600"></i>
+                                        ) : (
+                                            <i className="fas fa-cloud-upload-alt text-gray-600"></i>
+                                        )}
+                                        <span className="text-sm font-bold text-gray-700 hidden sm:inline">
+                                            {uploading ? 'Subiendo...' : 'Subir'}
+                                        </span>
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            className="hidden" 
+                                            onChange={handleImageUpload}
+                                            disabled={uploading}
+                                        />
+                                    </label>
+
+                                    {/* Previsualización Miniatura */}
+                                    {editingLoc.hero?.image && (
+                                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                                            <img src={editingLoc.hero.image} alt="Prev" className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">Pega una URL o sube un archivo desde tu dispositivo.</p>
+                            </div>
+
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 mb-1">SUBTÍTULO</label>
                                 <input 
@@ -253,26 +290,9 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                                     onChange={e => setEditingLoc({...editingLoc, hero: {...editingLoc.hero!, subtitle: e.target.value}})} 
                                 />
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 mb-1">URL IMAGEN DE FONDO</label>
-                                <div className="flex gap-2">
-                                    <input 
-                                        className="flex-1 border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-cyan-500 font-mono text-sm" 
-                                        value={editingLoc.hero?.image} 
-                                        onChange={e => setEditingLoc({...editingLoc, hero: {...editingLoc.hero!, image: e.target.value}})} 
-                                        required 
-                                    />
-                                    {editingLoc.hero?.image && (
-                                        <div className="w-12 h-10 rounded overflow-hidden border">
-                                            <img src={editingLoc.hero.image} alt="Prev" className="w-full h-full object-cover" />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                         </div>
                     </div>
 
-                    {/* Sección 4: Mapa */}
                     <div className="border-t pt-4">
                         <h4 className="font-bold mb-4 text-cyan-700 text-sm uppercase tracking-wider flex items-center gap-2">
                             <i className="fas fa-map-marker-alt"></i> Centro del Mapa
@@ -301,7 +321,6 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                         </div>
                     </div>
 
-                    {/* Footer Modal */}
                     <div className="flex justify-end gap-3 pt-6 border-t bg-white sticky bottom-0">
                         <button 
                             type="button" 
@@ -312,7 +331,8 @@ const EditInfoLocalidad: React.FC<Props> = ({ locationId }) => {
                         </button>
                         <button 
                             type="submit" 
-                            className="px-6 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5"
+                            disabled={uploading}
+                            className={`px-6 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <i className="fas fa-save mr-2"></i> Guardar Cambios
                         </button>
